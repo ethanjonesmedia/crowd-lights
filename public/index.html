@@ -80,6 +80,32 @@
   #panel button { flex: 1; background: #222; color: #fff; border: 1px solid #333; border-radius: 12px; padding: 12px; font-size: 15px; }
   #panel button.on { background: var(--accent); color: #000; border-color: var(--accent); }
   [hidden] { display: none !important; }
+
+  /* ---------- Winner screen ---------- */
+  #win { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; padding: 24px;
+    background: radial-gradient(120% 70% at 50% 30%, #1b3a9a 0%, #0b1846 55%, #050a1f 100%); overflow: hidden; text-align: center; }
+  #win .rays { position: absolute; left: 50%; top: 38%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax;
+    background: repeating-conic-gradient(rgba(247,194,27,.13) 0 10deg, transparent 10deg 20deg); animation: spin 30s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #confetti { position: absolute; inset: 0; pointer-events: none; }
+  #confetti i { position: absolute; top: -20px; width: 8px; height: 14px; border-radius: 2px; animation: fall var(--d) linear var(--delay) infinite; }
+  @keyframes fall { to { transform: translate3d(var(--x), 110vh, 0) rotate(var(--r)); } }
+  .win-card { position: relative; width: 100%; max-width: 360px; animation: pop .6s cubic-bezier(.2, 1.6, .4, 1) both; }
+  @keyframes pop { from { transform: scale(.6); opacity: 0; } }
+  .win-card .eyebrow { justify-content: center; color: #f7c21b; font-size: 12px; font-weight: 800; letter-spacing: .28em; text-transform: uppercase; display: flex; gap: 10px; align-items: center; }
+  .win-card h2 { margin: 6px 0 4px; font-size: clamp(64px, 22vw, 96px); line-height: .85; font-weight: 900; font-style: italic; text-transform: uppercase;
+    background: linear-gradient(180deg, #fff6c9 0%, #f7c21b 55%, #d99a00 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 24px rgba(247,194,27,.55)); }
+  .win-card .prize { font-size: 22px; font-weight: 800; margin: 14px 0 18px; color: #fff; }
+  .win-card .code-label { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: rgba(255,255,255,.65); margin-bottom: 8px; }
+  .win-card .code { display: inline-block; font: 900 52px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .14em; padding: 16px 18px 16px 26px;
+    color: #0b1846; background: linear-gradient(180deg, #ffe680, #f7c21b); border-radius: 16px; box-shadow: 0 12px 40px rgba(247,194,27,.45); }
+  .win-card .claim { margin: 18px 0 22px; font-size: 16px; line-height: 1.4; color: #e6e9f5; }
+  .win-card button { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.25); color: #fff; border-radius: 12px; padding: 12px 18px; font-size: 15px; }
+  #winPill { position: fixed; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 9;
+    background: linear-gradient(180deg, #ffe680, #f7c21b); color: #0b1846; border: 0; border-radius: 999px; padding: 12px 20px;
+    font-weight: 800; font-size: 15px; box-shadow: 0 8px 30px rgba(0,0,0,.5); white-space: nowrap; animation: glowPill 1.6s ease-in-out infinite; }
+  @keyframes glowPill { 50% { box-shadow: 0 8px 30px rgba(247,194,27,.8); } }
 </style>
 </head>
 <body>
@@ -108,6 +134,21 @@
   </div>
 </div>
 
+<div id="win" hidden>
+  <div class="rays"></div>
+  <div id="confetti"></div>
+  <div class="win-card">
+    <div class="eyebrow">Chargers Giveaway</div>
+    <h2>You<br>won!</h2>
+    <div class="prize" id="winPrize"></div>
+    <div class="code-label">Your prize code</div>
+    <div class="code" id="winCode"></div>
+    <p class="claim" id="winClaim"></p>
+    <button id="winHide">Back to the light show</button>
+  </div>
+</div>
+<button id="winPill" hidden>★ You won! Tap to see your code</button>
+
 <div id="panel">
   <div class="status"><i id="dot"></i><span id="statusText">Connecting…</span></div>
   <button id="torchBtn" hidden>Use flashlight too</button>
@@ -120,6 +161,13 @@
   const qs = new URLSearchParams(location.search);
   const section = Math.min(50, Math.max(1, parseInt(qs.get('s'), 10) || 1));
   const seed = (Math.random() * 2147483647) | 0;
+  // A stable id for this phone, so a winner who reloads still sees their prize code.
+  let fanId = '';
+  try { fanId = localStorage.getItem('lsFanId') || ''; } catch (e) {}
+  if (!fanId) {
+    fanId = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join('');
+    try { localStorage.setItem('lsFanId', fanId); } catch (e) {}
+  }
   document.getElementById('secBadge').textContent = 'Section ' + section;
 
   // Twinkling "phone lights" over the photo
@@ -159,13 +207,42 @@
 
   // ---- Live updates from the operator ----
   function connect() {
-    es = new EventSource('/events?s=' + section);
+    es = new EventSource('/events?s=' + section + '&id=' + fanId);
     es.onopen = () => setStatus(true);
     es.onerror = () => setStatus(false); // EventSource reconnects by itself
     es.onmessage = ev => {
       try { const s = JSON.parse(ev.data); if (!show || s.v !== show.v || s.startAt !== show.startAt) show = s; } catch (e) {}
     };
+    es.addEventListener('win', ev => { try { showWin(JSON.parse(ev.data)); } catch (e) {} });
+    es.addEventListener('winclear', () => { $('win').hidden = true; $('winPill').hidden = true; });
   }
+
+  // ---- Giveaway winner ----
+  let confettiBuilt = false;
+  function showWin(w) {
+    $('winPrize').textContent = w.prize || '';
+    $('winCode').textContent = w.code || '';
+    $('winClaim').textContent = w.claim || '';
+    if (!confettiBuilt) {
+      confettiBuilt = true;
+      const box = $('confetti'), cols = ['#f7c21b', '#ffe680', '#ffffff', '#3d6bff', '#f7c21b'];
+      for (let i = 0; i < 70; i++) {
+        const c = document.createElement('i');
+        c.style.left = (Math.random() * 100) + '%';
+        c.style.background = cols[i % cols.length];
+        c.style.setProperty('--d', (2.5 + Math.random() * 3).toFixed(2) + 's');
+        c.style.setProperty('--delay', (-Math.random() * 5).toFixed(2) + 's');
+        c.style.setProperty('--x', ((Math.random() - 0.5) * 160).toFixed(0) + 'px');
+        c.style.setProperty('--r', ((Math.random() - 0.5) * 1440).toFixed(0) + 'deg');
+        box.appendChild(c);
+      }
+    }
+    $('winPill').hidden = true;
+    $('win').hidden = false;
+    try { navigator.vibrate && navigator.vibrate([300, 120, 300, 120, 600]); } catch (e) {}
+  }
+  $('winHide').onclick = () => { $('win').hidden = true; $('winPill').hidden = false; };
+  $('winPill').onclick = () => { $('winPill').hidden = true; $('win').hidden = false; };
   function setStatus(ok) {
     $('dot').className = ok ? 'ok' : '';
     $('statusText').textContent = ok ? 'Connected — section ' + section : 'Reconnecting… the show keeps running';
@@ -204,8 +281,7 @@
 
   // ---- Render loop ----
   function tick() {
-    const t = show ? (Date.now() + offset - show.startAt) / 1000 : 0;
-    const c = LightFX.frame(show, t, section, seed);
+    const c = LightFX.frame(show, Date.now() + offset, section, seed);
     const css = LightFX.css(c);
     if (css !== lastCss) { light.style.background = css; lastCss = css; }
     waiting.hidden = !!(show && show.effect !== 'off');
