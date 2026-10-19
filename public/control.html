@@ -77,6 +77,12 @@
   .ghost { background: transparent; border: 1px dashed #444; border-radius: 12px; width: 54px; height: 54px; color: var(--muted); font-size: 22px; }
   .presets { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
   .preset { display: flex; align-items: center; gap: 8px; background: #1d1d21; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px 6px 6px; font-size: 13px; }
+  .preset.custom { padding-right: 6px; }
+  .preset .pbtn { display: flex; align-items: center; gap: 8px; background: none; border: 0; padding: 0; }
+  .preset .pdel { width: 20px; height: 20px; border-radius: 50%; border: 0; background: #333; color: #ccc; font-size: 12px; line-height: 20px; padding: 0; }
+  .preset .pdel:hover { background: var(--danger); color: #fff; }
+  .tplbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .tplbar input[type=text] { flex: 1; min-width: 160px; max-width: 260px; }
   .chips { display: inline-flex; } .chips i { width: 16px; height: 16px; border-radius: 50%; margin-right: -4px; border: 2px solid #1d1d21; display: inline-block; }
 
   /* beat */
@@ -221,6 +227,11 @@
       <h2>Colours &amp; speed</h2>
       <div class="swatches" id="swatches"></div>
       <div class="presets" id="presets"></div>
+      <div class="tplbar">
+        <input id="tplName" type="text" maxlength="40" placeholder="Template name, e.g. Homecoming">
+        <button class="btn gold sm" id="tplSave">Save current colours as template</button>
+      </div>
+      <p class="hint" id="tplHint">Set up your colours above, name them, and save. Your templates show up as buttons next to the built-in ones. Click × on one to delete it. They are saved in this browser.</p>
       <div class="row">
         <label for="speed">Speed</label>
         <input id="speed" type="range" min="0.25" max="4" step="0.05" value="1">
@@ -422,16 +433,40 @@
   }
   function setEffect(key) { state.effect = key; renderControls(); send(true); }
 
+  let custom = store.get('lsColorTpls', []);
+  if (!Array.isArray(custom)) custom = [];
   function buildPresets() {
-    const box = $('presets');
+    const box = $('presets'); box.innerHTML = '';
+    const apply = p => { state.colors = p.colors.slice(); renderControls(); send(true); };
     PRESETS.forEach(p => {
       const b = document.createElement('button'); b.className = 'preset';
       b.appendChild(chips(p.colors));
       const t = document.createElement('span'); t.textContent = p.name; b.appendChild(t);
-      b.onclick = () => { state.colors = p.colors.slice(); renderControls(); send(true); };
+      b.onclick = () => apply(p);
       box.appendChild(b);
     });
+    custom.forEach((p, i) => {
+      const w = document.createElement('div'); w.className = 'preset custom';
+      const b = document.createElement('button'); b.className = 'pbtn';
+      b.appendChild(chips(p.colors));
+      const t = document.createElement('span'); t.textContent = p.name; b.appendChild(t);
+      b.onclick = () => apply(p);
+      const x = document.createElement('button'); x.className = 'pdel'; x.textContent = '×'; x.title = 'Delete template';
+      x.onclick = () => { if (!confirm('Delete the template "' + p.name + '"?')) return; custom.splice(i, 1); store.set('lsColorTpls', custom); buildPresets(); };
+      w.append(b, x); box.appendChild(w);
+    });
   }
+  $('tplSave').onclick = () => {
+    const name = $('tplName').value.trim();
+    if (!name) { $('tplName').focus(); $('tplHint').textContent = 'Give the template a name first.'; return; }
+    const colors = state.colors.slice();
+    const at = custom.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+    if (at >= 0) { if (!confirm('Replace the existing template "' + custom[at].name + '"?')) return; custom[at] = { name, colors }; }
+    else custom.push({ name, colors });
+    store.set('lsColorTpls', custom); buildPresets();
+    $('tplName').value = ''; $('tplHint').textContent = 'Saved "' + name + '".';
+  };
+  $('tplName').addEventListener('keydown', e => { if (e.key === 'Enter') $('tplSave').click(); });
   function chips(colors) {
     const c = document.createElement('span'); c.className = 'chips';
     colors.forEach(col => { const i = document.createElement('i'); i.style.background = col; c.appendChild(i); });
