@@ -303,7 +303,7 @@
     <section class="card wide">
       <h2>Sign-in screen photo</h2>
       <div id="photos" class="photos"></div>
-      <p class="hint">Pick the team photo fans see when they scan the QR code. It changes for new visitors right away. To add your own photo, upload it to the <b>public</b> folder on GitHub with a name starting with <b>team-</b> (for example <b>team-hockey.jpg</b>). It shows up here after Railway updates. <a href="/" target="_blank" style="color:var(--accent)">Open the fan page ↗</a></p>
+      <p class="hint">Pick the team photo fans see when they scan the QR code. It changes for new visitors right away. To add your own photo, upload it to the <b>public</b> folder on GitHub with a name starting with <b>team-</b> (for example <b>team-hockey.jpg</b>), or replace <b>gym.jpg</b>. It shows up here after Railway updates. <a href="/" target="_blank" style="color:var(--accent)">Open the fan page ↗</a></p>
     </section>
 
     <section class="card wide" id="qrCard">
@@ -789,7 +789,7 @@
   }
 
   // ---------- sign-in photo ----------
-  const nice = f => f.replace(/^team-/, '').replace(/\.\w+$/, '').replace(/[-_]/g, ' ')
+  const nice = f => f.replace(/^gym\./, 'Gym (bleachers).').replace(/^team-/, '').replace(/\.\w+$/, '').replace(/[-_]/g, ' ')
     .replace(/\bmbb\b/i, "Men's basketball").replace(/\bwbb\b/i, "Women's basketball").replace(/\bmvb\b/i, "Men's volleyball").replace(/\bwvb\b/i, "Women's volleyball");
   function renderPhotos(s) {
     const box = $('photos'); box.innerHTML = '';

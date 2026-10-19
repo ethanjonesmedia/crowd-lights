@@ -55,11 +55,14 @@
   @media (prefers-reduced-motion: reduce) { #splash *, #splash *::before, #splash *::after { animation: none !important; } }
 
   /* ---------- Look 0: Gym photo (original) ---------- */
-  .look-0 .bg { position: fixed; inset: 0; background: url('/gym.jpg') center 30% / cover no-repeat; animation: drift 24s ease-in-out infinite alternate; transform-origin: 60% 30%; }
+  .look-0 .bg { position: fixed; inset: 0; background: #0b1846 center 30% / cover no-repeat; animation: drift 24s ease-in-out infinite alternate; transform-origin: 60% 30%; }
+  .look-0 .bg .img { position: absolute; inset: 0; background-size: cover; background-position: center 30%; opacity: 0; transition: opacity .6s; }
+  .look-0 .bg .img.on { opacity: 1; }
   @keyframes drift { from { transform: scale(1.05); } to { transform: scale(1.22) translate(-2%, 1%); } }
-  .look-0 .shade { position: fixed; inset: 0; background: linear-gradient(180deg, rgba(5,10,31,.15) 0%, rgba(5,10,31,.35) 30%, rgba(5,10,31,.88) 55%, #050a1f 78%); }
-  .look-0 .content { margin-top: auto; padding-top: 40vh; }
-  .look-0 .hl { font-size: clamp(44px, 14.5vw, 64px); margin-top: 8px; }
+  .look-0 .shade { position: fixed; inset: 0; background: linear-gradient(180deg, rgba(5,10,31,.1) 0%, rgba(5,10,31,.3) 22%, rgba(5,10,31,.82) 42%, #050a1f 60%); }
+  #splash.look-0 .content { margin-top: auto; padding-top: 16vh; }
+  .look-0 .hl { font-size: clamp(42px, 13.5vw, 60px); margin-top: 8px; text-shadow: 0 4px 30px rgba(0,0,0,.6); }
+  .look-0 .pick { margin-top: 16px; }
   .look-0 .hl span { display: block; }
 
   /* ---------- Look 1: Team Spotlight ---------- */
@@ -185,6 +188,7 @@
   .look-5 .badge { border-radius: 6px; font-family: ui-monospace, Menlo, monospace; }
 
   @media (max-height: 700px) {
+    #splash.look-0 .content { padding-top: 10vh; } .look-0 .hl { font-size: 40px; } .look-0 .pick { margin-top: 10px; }
     .steps li { padding: 8px 12px; font-size: 14px; } .badge { margin: 10px 0 12px; }
     .look-1 .photo { height: 25vh; min-height: 0; } .look-1 .content { margin-top: -60px; } .pick { margin: 8px 0 10px; } .look-3 .collage { height: 31vh; min-height: 0; } .board .screen-img { height: 20vh; min-height: 0; }
     .look-1 .logo, .look-3 .logo { width: 58%; } .look-5 .logo { width: 44%; } .fine { margin-top: 10px; } .led { font-size: 34px; }
@@ -279,7 +283,7 @@
 <script>
 // ---- Sign-in screen designs. Pick with ?look=0..5, otherwise DEFAULT_LOOK is used. ----
 (() => {
-  const DEFAULT_LOOK = 1;
+  const DEFAULT_LOOK = 0;
   const BADGE = '<div class="badge" id="secBadge">Section 1</div>';
   const STEPS = '<ol class="steps">' +
     '<li><span class="n">1</span><span>Brightness <b>all the way up</b></span></li>' +
@@ -319,8 +323,8 @@
   }
   const PICK = '<div class="pick"><div class="pick-label"><b>Tap your section</b><span id="pickHint">Where are you sitting?</span></div>' + seatMap() + '</div>';
   const LOOKS = {
-    0: '<div class="bg"></div><div class="shade"></div><div id="sparks"></div><div class="content">' +
-       '<div class="eyebrow">Chargers Light Show</div><h1 class="hl">Light up<span class="goldtext">the gym</span></h1>' + BADGE + STEPS + JOIN + FINE + '</div>',
+    0: '<div class="bg"><div class="img"></div></div><div class="shade"></div><div id="sparks"></div><div class="content">' +
+       '<div class="eyebrow">Chargers Light Show</div><h1 class="hl">Light up<span class="goldtext">the gym</span></h1>' + PICK + JOIN + FINE + '</div>',
     1: '<div class="photo"><div class="img"></div></div><div class="content">' + LOGO + '<div class="eyebrow">Light Show</div>' + PICK + JOIN + FINE + '</div>',
     2: '<div class="beams"></div><div id="sparks"></div><div class="floor"></div><div class="content">' + LOGO +
        '<h1 class="hl">Light up <span class="goldtext">the gym</span></h1>' + BADGE + STEPS + JOIN + FINE + '</div>',
@@ -340,12 +344,12 @@
   sp.classList.add('look-' + look);
   sp.innerHTML = LOOKS[look];
   // Team photo chosen in the control panel (or ?photo=team-xyz.jpg to preview one)
-  const img = sp.querySelector('.photo .img');
+  const img = sp.querySelector('.photo .img, .bg .img');
   if (img) {
     const show = f => { if (!f) return; const pre = new Image(); pre.onload = () => { img.style.backgroundImage = `url('/${f}')`; img.classList.add('on'); }; pre.src = '/' + f; };
     const qp = new URLSearchParams(location.search).get('photo');
-    if (qp && /^team-[\w-]+\.(jpe?g|png|webp)$/i.test(qp)) show(qp);
-    else fetch('/settings', { cache: 'no-store' }).then(r => r.json()).then(s => show(s.photo)).catch(() => show('team-mbb.jpg'));
+    if (qp && /^(gym|team-[\w-]+)\.(jpe?g|png|webp)$/i.test(qp)) show(qp);
+    else fetch('/settings', { cache: 'no-store' }).then(r => r.json()).then(s => show(s.photo)).catch(() => show('gym.jpg'));
   }
 })();
 </script>

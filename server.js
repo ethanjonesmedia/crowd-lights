@@ -27,9 +27,12 @@ let show = {
 
 // Sign-in screen photo: any file in /public named team-*.jpg/.jpeg/.png/.webp can be picked from the control panel.
 function listPhotos() {
-  try { return fs.readdirSync(PUBLIC).filter(f => /^team-[\w-]+\.(jpe?g|png|webp)$/i.test(f)).sort(); } catch { return []; }
+  try {
+    return fs.readdirSync(PUBLIC).filter(f => /^(gym|team-[\w-]+)\.(jpe?g|png|webp)$/i.test(f))
+      .sort((a, b) => (b.startsWith('gym') - a.startsWith('gym')) || a.localeCompare(b));
+  } catch { return []; }
 }
-const settings = { photo: process.env.DEFAULT_PHOTO || 'team-mbb.jpg' };
+const settings = { photo: process.env.DEFAULT_PHOTO || 'gym.jpg' };
 
 const fans = new Set();     // { res, section, id }
 const watchers = new Set(); // control panels
