@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Light Show</title>
+<style>
+  :root { --fg: #fff; --muted: #a3a3a3; --accent: #ffd400; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: #000; color: var(--fg); overflow: hidden;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  #light { position: fixed; inset: 0; background: #000; }
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px max(20px, env(safe-area-inset-left)); text-align: center; }
+  #splash { background: radial-gradient(120% 80% at 50% 0%, #1d1d1f 0%, #000 70%); z-index: 3; }
+  h1 { font-size: clamp(32px, 9vw, 48px); line-height: 1.05; margin: 0 0 8px; letter-spacing: -0.02em; }
+  .badge { display: inline-block; border: 1px solid #333; border-radius: 999px; padding: 6px 14px; color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+  ol { text-align: left; margin: 0 0 32px; padding: 0 0 0 22px; max-width: 320px; color: #d4d4d4; font-size: 17px; line-height: 1.5; }
+  ol li { margin-bottom: 6px; }
+  button { font: inherit; cursor: pointer; }
+  #join { background: var(--accent); color: #000; border: 0; border-radius: 16px; padding: 18px 40px; font-size: 20px; font-weight: 700; width: 100%; max-width: 320px; }
+  .fine { margin-top: 20px; font-size: 13px; color: #777; max-width: 320px; }
+  #waiting { z-index: 1; pointer-events: none; transition: opacity .4s; }
+  #waiting p { color: #8a8a8a; font-size: 18px; margin: 0; }
+  #waiting .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); margin: 0 auto 16px; animation: blink 1.6s infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
+  #panel { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    background: rgba(0,0,0,.82); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap; transform: translateY(110%); transition: transform .25s; }
+  #panel.show { transform: none; }
+  #panel .status { flex: 1 1 100%; font-size: 14px; color: #bbb; display: flex; align-items: center; gap: 8px; }
+  #panel .status i { width: 9px; height: 9px; border-radius: 50%; background: #e5484d; display: inline-block; }
+  #panel .status i.ok { background: #30a46c; }
+  #panel button { flex: 1; background: #222; color: #fff; border: 1px solid #333; border-radius: 12px; padding: 12px; font-size: 15px; }
+  #panel button.on { background: var(--accent); color: #000; border-color: var(--accent); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div id="light"></div>
+
+<div id="waiting" class="screen" hidden>
+  <div class="dot"></div>
+  <p>You're in! Keep this screen open<br>and wait for the show.</p>
+</div>
+
+<div id="splash" class="screen">
+  <h1>Light up<br>the stands</h1>
+  <div class="badge" id="secBadge">Section 1</div>
+  <ol>
+    <li>Turn your screen brightness <b>all the way up</b></li>
+    <li>Tap <b>Join</b> and keep this page open</li>
+    <li>When the show starts, hold your phone up with the screen <b>facing the field</b></li>
+  </ol>
+  <button id="join">Join the light show</button>
+  <p class="fine">This show includes flashing lights. Nothing to install, and no camera, location, or personal info is collected.</p>
+</div>
+
+<div id="panel">
+  <div class="status"><i id="dot"></i><span id="statusText">Connecting…</span></div>
+  <button id="torchBtn" hidden>Use flashlight too</button>
+  <button id="leaveBtn">Leave</button>
+</div>
+
+<script src="/effects.js"></script>
+<script>
+(() => {
+  const qs = new URLSearchParams(location.search);
+  const section = Math.min(50, Math.max(1, parseInt(qs.get('s'), 10) || 1));
+  const seed = (Math.random() * 2147483647) | 0;
+  document.getElementById('secBadge').textContent = 'Section ' + section;
+
+  const $ = id => document.getElementById(id);
+  const light = $('light'), waiting = $('waiting'), panel = $('panel');
+  let show = null, offset = 0, es = null, wakeLock = null, running = false, lastCss = '';
+
+  // ---- Clock sync: estimate server time offset from the lowest-latency sample ----
+  async function syncClock(samples) {
+    let best = null;
+    for (let i = 0; i < samples; i++) {
+      try {
+        const t0 = Date.now();
+        const r = await fetch('/time', { cache: 'no-store' });
+        const { now } = await r.json();
+        const t1 = Date.now();
+        const rtt = t1 - t0;
+        if (!best || rtt < best.rtt) best = { rtt, off: now - (t0 + t1) / 2 };
+      } catch (e) {}
+    }
+    if (best) offset = best.off;
+  }
+
+  // ---- Live updates from the operator ----
+  function connect() {
+    es = new EventSource('/events?s=' + section);
+    es.onopen = () => setStatus(true);
+    es.onerror = () => setStatus(false); // EventSource reconnects by itself
+    es.onmessage = ev => {
+      try { const s = JSON.parse(ev.data); if (!show || s.v !== show.v || s.startAt !== show.startAt) show = s; } catch (e) {}
+    };
+  }
+  function setStatus(ok) {
+    $('dot').className = ok ? 'ok' : '';
+    $('statusText').textContent = ok ? 'Connected — section ' + section : 'Reconnecting… the show keeps running';
+  }
+
+  // ---- Screen stays awake ----
+  async function keepAwake() {
+    try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && running) { keepAwake(); syncClock(3); }
+  });
+
+  // ---- Optional flashlight (Android Chrome only; iPhone browsers don't allow it) ----
+  let torchTrack = null, torchOn = false, torchLast = 0;
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (!isIOS && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) $('torchBtn').hidden = false;
+  $('torchBtn').onclick = async () => {
+    const btn = $('torchBtn');
+    if (torchTrack) { setTorch(false); torchTrack.stop(); torchTrack = null; btn.classList.remove('on'); btn.textContent = 'Use flashlight too'; return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const track = stream.getVideoTracks()[0];
+      const caps = track.getCapabilities ? track.getCapabilities() : {};
+      if (!caps.torch) { track.stop(); btn.textContent = 'Flashlight not supported'; btn.disabled = true; return; }
+      torchTrack = track; btn.classList.add('on'); btn.textContent = 'Flashlight on';
+    } catch (e) { btn.textContent = 'Flashlight blocked'; }
+  };
+  function setTorch(on) {
+    if (!torchTrack || on === torchOn) return;
+    const now = performance.now();
+    if (now - torchLast < 90) return;
+    torchLast = now; torchOn = on;
+    torchTrack.applyConstraints({ advanced: [{ torch: on }] }).catch(() => {});
+  }
+
+  // ---- Render loop ----
+  function tick() {
+    const t = show ? (Date.now() + offset - show.startAt) / 1000 : 0;
+    const c = LightFX.frame(show, t, section, seed);
+    const css = LightFX.css(c);
+    if (css !== lastCss) { light.style.background = css; lastCss = css; }
+    waiting.hidden = !!(show && show.effect !== 'off');
+    if (torchTrack) setTorch(LightFX.luminance(c) > 0.45);
+    requestAnimationFrame(tick);
+  }
+
+  // Tap anywhere to show/hide the status panel
+  let panelTimer;
+  light.addEventListener('click', () => {
+    panel.classList.toggle('show');
+    clearTimeout(panelTimer);
+    panelTimer = setTimeout(() => panel.classList.remove('show'), 5000);
+  });
+  $('leaveBtn').onclick = () => location.reload();
+
+  $('join').onclick = async () => {
+    $('splash').hidden = true;
+    waiting.hidden = false;
+    running = true;
+    try { await document.documentElement.requestFullscreen?.({ navigationUI: 'hide' }); } catch (e) {}
+    keepAwake();
+    connect();
+    await syncClock(6);
+    setInterval(() => syncClock(3), 30000);
+    requestAnimationFrame(tick);
+  };
+})();
+</script>
+</body>
+</html>
