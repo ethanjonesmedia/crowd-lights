@@ -85,6 +85,23 @@
   .tplbar input[type=text] { flex: 1; min-width: 160px; max-width: 260px; }
   .chips { display: inline-flex; } .chips i { width: 16px; height: 16px; border-radius: 50%; margin-right: -4px; border: 2px solid #1d1d21; display: inline-block; }
 
+  /* quick actions */
+  #cues { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+  .cue { position: relative; text-align: left; background: #1d1d21; border: 1px solid var(--line); border-radius: 14px; padding: 16px 14px 14px; min-height: 104px; display: flex; flex-direction: column; gap: 8px; }
+  .cue:hover { border-color: #444; }
+  .cue b { font-size: 17px; line-height: 1.2; padding-right: 26px; }
+  .cue .meta { color: var(--muted); font-size: 12.5px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+  .cue .key { position: absolute; top: 10px; right: 12px; font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }
+  .cue.active { border-color: var(--accent); background: #2a2610; box-shadow: inset 0 0 0 1px var(--accent); }
+  .cue.active .go { color: #111; background: var(--accent); }
+  .cue .go { align-self: flex-start; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; border-radius: 999px; padding: 3px 9px; background: #2c2c33; color: var(--fg); }
+  .cue .edit { position: absolute; bottom: 10px; right: 10px; width: 28px; height: 28px; padding: 0; border-radius: 8px; background: #26262b; border: 1px solid #333; font-size: 13px; }
+  #cueEd { margin-top: 16px; padding: 16px; border: 1px solid var(--accent); border-radius: 12px; background: #1a1808; }
+  #cueEd .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  #cueEd .field { margin: 0; }
+  #cueEd .chk { display: flex; gap: 8px; align-items: center; color: var(--fg); }
+  #cueEd select, #cueEd input[type=text] { width: 100%; }
+  #cueEd .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; align-items: center; }
   /* beat */
   .beat { display: grid; grid-template-columns: 150px 1fr; gap: 16px; align-items: center; }
   #tapBtn { width: 150px; height: 150px; border-radius: 50%; border: 3px solid var(--accent); background: #1d1a08; color: var(--accent);
@@ -221,6 +238,30 @@
     <section class="card wide">
       <h2>Effect <span class="k">— shortcuts 1–9</span></h2>
       <div id="effects"></div>
+    </section>
+
+    <section class="card wide" id="cuesCard">
+      <h2>Quick actions <span class="k">— one click, or Shift+1–9</span></h2>
+      <div id="cues"></div>
+      <div class="addrow"><button class="btn" id="cueNew">+ New quick action</button></div>
+      <div id="cueEd" hidden>
+        <div class="grid">
+          <label class="field"><span>Name</span><input id="cName" type="text" maxlength="40" placeholder="e.g. O Canada"></label>
+          <label class="field"><span>What it does</span><select id="cSource"></select></label>
+          <label class="field"><span>When you click it again (stop)</span><select id="cAfter"></select></label>
+        </div>
+        <div id="cLook" class="hint"></div>
+        <label class="chk" style="margin-top:12px"><input type="checkbox" id="cToggle"> Click again to stop (use for things that run until you say so, like a player-intro flash)</label>
+        <div class="acts">
+          <button class="btn gold" id="cSave">Save</button>
+          <button class="btn" id="cCancel">Cancel</button>
+          <span style="flex:1"></span>
+          <button class="btn sm" id="cLeft" title="Move earlier">←</button>
+          <button class="btn sm" id="cRight" title="Move later">→</button>
+          <button class="btn sm red" id="cDel">Delete</button>
+        </div>
+      </div>
+      <p class="hint">Set up an effect, colours and speed above, then <b>+ New quick action</b> to save it as a button. A quick action can also start one of your routines. Actions marked “stop” turn into a ■ Stop button while they run; Blackout always stops everything.</p>
     </section>
 
     <section class="card wide">
@@ -381,7 +422,7 @@
     $('baseUrl').value = location.origin + '/';
     $('prize').value = store.get('lsPrize', '');
     $('claim').value = store.get('lsClaim', '');
-    buildEffects(); buildPresets(); loadRoutines();
+    buildEffects(); buildPresets(); loadRoutines(); renderCues();
     syncClock(); setInterval(syncClock, 30000);
     const es = new EventSource('/events?role=control');
     es.onopen = () => $('live').classList.add('ok');
@@ -415,6 +456,7 @@
   function adopt(s) {
     if (s.v === adopted) return; adopted = s.v;
     Object.assign(state, { effect: s.effect, colors: s.colors.slice(), speed: s.speed, sections: s.sections, bpm: s.bpm, beatAt: s.beatAt });
+    if (activeCue && s.effect !== cueExpect) { activeCue = null; renderCues(); }
     renderControls();
   }
 
@@ -692,9 +734,115 @@
   };
   $('stopBtn').onclick = () => setEffect('off');
 
+
+  // ---------- quick actions (one-click cues) ----------
+  const DEFAULT_CUES = [
+    { id: 'ocanada', name: 'O Canada', effect: 'pulse', colors: ['#d52b1e', '#ffffff'], speed: 0.4, toggle: true, after: 'off' },
+    { id: 'walkout', name: 'Walk-outs', effect: 'sparkle', colors: ['#ffffff', '#f7c21b'], speed: 1.2, toggle: true, after: 'off' },
+    { id: 'intro', name: 'Player intro flash', effect: 'strobe', colors: ['#f7c21b', '#ffffff'], speed: 1, toggle: true, after: 'off' },
+    { id: 'hype', name: 'Chargers hype', effect: 'wave', colors: ['#f7c21b', '#ffffff'], speed: 1.5, toggle: false, after: 'off' },
+  ];
+  let cues = store.get('lsCues', null);
+  if (!Array.isArray(cues) || !cues.length) cues = JSON.parse(JSON.stringify(DEFAULT_CUES));
+  let activeCue = null, cueExpect = null, cueEditing = null; // cueEditing: cue object, or 'new'
+  const saveCues = () => store.set('lsCues', cues);
+  const cueById = id => cues.find(c => c.id === id);
+
+  function cueMeta(c) {
+    const meta = document.createElement('span'); meta.className = 'meta';
+    if (c.routine) { const r = routines.find(x => x.id === c.routine); meta.append('Routine: ' + (r ? r.name : '(missing)')); }
+    else meta.append(chips(c.colors), fxLabel(c.effect));
+    return meta;
+  }
+  function renderCues() {
+    const box = $('cues'); box.innerHTML = '';
+    cues.forEach((c, i) => {
+      const on = activeCue === c.id;
+      const b = document.createElement('div'); b.className = 'cue' + (on ? ' active' : ''); b.tabIndex = 0; b.setAttribute('role', 'button');
+      const nm = document.createElement('b'); nm.textContent = c.name;
+      const go = document.createElement('span'); go.className = 'go'; go.textContent = on && c.toggle ? '■ Stop' : '▶ Start';
+      b.append(nm, go, cueMeta(c));
+      if (i < 9) { const k = document.createElement('span'); k.className = 'key'; k.textContent = '⇧' + (i + 1); b.appendChild(k); }
+      const ed = document.createElement('button'); ed.className = 'edit'; ed.textContent = '✎'; ed.title = 'Edit';
+      ed.onclick = e => { e.stopPropagation(); openCueEditor(c); };
+      b.appendChild(ed);
+      b.onclick = () => runCue(c);
+      b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); runCue(c); } };
+      box.appendChild(b);
+    });
+  }
+  function runCue(c) {
+    if (!c) return;
+    if (c.toggle && activeCue === c.id) return stopCue(c);
+    if (c.routine) {
+      const r = routines.find(x => x.id === c.routine);
+      if (!r || !r.steps.length) return alert('That routine is missing or has no steps.');
+      activeCue = c.id; cueExpect = 'routine';
+      send(true, { effect: 'routine', steps: r.steps, loop: !!r.loop, routineName: r.name, restart: true });
+    } else {
+      activeCue = c.id; cueExpect = c.effect;
+      Object.assign(state, { effect: c.effect, colors: c.colors.slice(), speed: c.speed });
+      renderControls(); send(true, { restart: true });
+    }
+    renderCues();
+  }
+  function stopCue(c) {
+    activeCue = null; cueExpect = null;
+    const next = c.after && c.after !== 'off' ? cueById(c.after) : null;
+    if (next && next.id !== c.id) runCue(next); else setEffect('off');
+    renderCues();
+  }
+  function cueLookText() { return (state.effect === 'routine' ? 'Current look: Routine' : 'Current look: ' + fxLabel(state.effect)) + ' · ' + state.colors.length + ' colour' + (state.colors.length === 1 ? '' : 's') + ' · ' + (+state.speed).toFixed(2) + '×'; }
+  function openCueEditor(c) {
+    cueEditing = c || 'new';
+    const isNew = !c;
+    $('cName').value = c ? c.name : '';
+    const src = $('cSource'); src.innerHTML = '';
+    const add = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; src.appendChild(o); };
+    if (c && !c.routine) add('keep', 'Its saved look (' + fxLabel(c.effect) + ')');
+    add('current', 'The look currently set on the controls above');
+    routines.forEach(r => add('r:' + r.id, 'Run routine: ' + r.name));
+    src.value = c ? (c.routine ? 'r:' + c.routine : 'keep') : 'current';
+    const af = $('cAfter'); af.innerHTML = '';
+    const ao = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; af.appendChild(o); };
+    ao('off', 'Blackout');
+    cues.filter(x => x !== c).forEach(x => ao(x.id, 'Start “' + x.name + '”'));
+    af.value = c && c.after && [...af.options].some(o => o.value === c.after) ? c.after : 'off';
+    $('cToggle').checked = c ? !!c.toggle : false;
+    $('cLook').textContent = cueLookText();
+    $('cDel').hidden = $('cLeft').hidden = $('cRight').hidden = isNew;
+    $('cueEd').hidden = false; $('cName').focus();
+  }
+  const closeCueEditor = () => { $('cueEd').hidden = true; cueEditing = null; };
+  $('cueNew').onclick = () => openCueEditor(null);
+  $('cCancel').onclick = closeCueEditor;
+  $('cSave').onclick = () => {
+    const name = $('cName').value.trim();
+    if (!name) { $('cName').focus(); return; }
+    const c = cueEditing === 'new' ? { id: newId() } : cueEditing;
+    const v = $('cSource').value;
+    c.name = name.slice(0, 40); c.toggle = $('cToggle').checked; c.after = $('cAfter').value;
+    if (v.startsWith('r:')) { c.routine = v.slice(2); delete c.effect; delete c.colors; delete c.speed; }
+    else if (v === 'current') { delete c.routine; Object.assign(c, { effect: state.effect === 'routine' ? 'solid' : state.effect, colors: state.colors.slice(), speed: state.speed }); }
+    if (cueEditing === 'new') cues.push(c);
+    saveCues(); closeCueEditor(); renderCues();
+  };
+  $('cDel').onclick = () => {
+    if (!confirm('Delete the quick action "' + cueEditing.name + '"?')) return;
+    cues = cues.filter(x => x !== cueEditing); if (activeCue === cueEditing.id) activeCue = null;
+    saveCues(); closeCueEditor(); renderCues();
+  };
+  const moveCue = d => { const i = cues.indexOf(cueEditing), j = i + d; if (j < 0 || j >= cues.length) return; cues.splice(j, 0, cues.splice(i, 1)[0]); saveCues(); renderCues(); };
+  $('cLeft').onclick = () => moveCue(-1); $('cRight').onclick = () => moveCue(1);
+  document.addEventListener('keydown', e => {
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName) || e.metaKey || e.ctrlKey || !e.shiftKey || e.repeat) return;
+    const m = /^Digit([1-9])$/.exec(e.code); if (!m) return;
+    const c = cues[+m[1] - 1]; if (c) { e.preventDefault(); runCue(c); }
+  });
+
   // ---------- keyboard ----------
   document.addEventListener('keydown', e => {
-    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName) || e.metaKey || e.ctrlKey) return;
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName) || e.metaKey || e.ctrlKey || e.shiftKey) return;
     const keys = Object.keys(LightFX.EFFECTS);
     if (e.key === 'b' || e.key === 'B' || e.key === 'Escape') setEffect('off');
     else if (e.key === 't' || e.key === 'T') { if (!e.repeat) tap(); }
