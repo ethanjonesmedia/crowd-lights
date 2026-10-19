@@ -16,58 +16,194 @@
     padding: 24px max(20px, env(safe-area-inset-left)); text-align: center; }
   button { font: inherit; cursor: pointer; }
 
-  /* ---------- Sign-in screen ---------- */
-  #splash { z-index: 3; justify-content: flex-end; overflow-y: auto; background: #050a1f;
-    padding-bottom: calc(28px + env(safe-area-inset-bottom)); --gold: #f7c21b; --gold-2: #ffdf6b; --navy: #0b1846; }
-  #splash .bg { position: fixed; inset: 0; background: url('/gym.jpg') center 30% / cover no-repeat;
-    animation: drift 24s ease-in-out infinite alternate; transform-origin: 60% 30%; }
-  @keyframes drift { from { transform: scale(1.05); } to { transform: scale(1.22) translate(-2%, 1%); } }
-  #splash .shade { position: fixed; inset: 0;
-    background:
-      radial-gradient(120% 60% at 50% 0%, rgba(11,24,70,0) 0%, rgba(11,24,70,.35) 60%),
-      linear-gradient(180deg, rgba(5,10,31,.15) 0%, rgba(5,10,31,.35) 30%, rgba(5,10,31,.88) 55%, #050a1f 78%); }
-  #sparks { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+  /* ---------- Sign-in screen (shared) ---------- */
+  #splash { z-index: 3; overflow-y: auto; overflow-x: hidden; background: #050a1f; justify-content: flex-start;
+    padding: 0; --gold: #f7c21b; --gold-2: #ffdf6b; --navy: #0b1846; --royal: #1f3f99; }
+  #splash .content { position: relative; width: 100%; max-width: 390px; margin: 0 auto; display: flex; flex-direction: column; align-items: center;
+    padding: 0 20px calc(26px + env(safe-area-inset-bottom)); }
+  #sparks { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
   #sparks i { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #fff;
     box-shadow: 0 0 8px 2px rgba(255,255,255,.8); opacity: 0; animation: twinkle var(--d) ease-in-out var(--delay) infinite; }
   #sparks i.g { background: var(--gold-2); box-shadow: 0 0 10px 3px rgba(247,194,27,.85); }
   @keyframes twinkle { 0%, 100% { opacity: 0; transform: scale(.4); } 50% { opacity: var(--o); transform: scale(1); } }
-  .content { position: relative; width: 100%; max-width: 380px; display: flex; flex-direction: column; align-items: center; }
-  .eyebrow { display: flex; align-items: center; gap: 10px; color: var(--gold); font-size: 12px; font-weight: 800;
-    letter-spacing: .28em; text-transform: uppercase; margin-bottom: 10px; }
-  .eyebrow::before, .eyebrow::after { content: ''; width: 26px; height: 2px; background: linear-gradient(90deg, transparent, var(--gold)); }
-  .eyebrow::after { transform: scaleX(-1); }
-  h1 { margin: 0; font-size: clamp(44px, 14.5vw, 64px); line-height: .88; font-weight: 900; font-style: italic;
-    text-transform: uppercase; letter-spacing: -.02em; text-shadow: 0 4px 30px rgba(0,0,0,.6); }
-  h1 span { display: block; background: linear-gradient(180deg, #fff3b8 0%, var(--gold) 55%, #d99a00 100%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-    filter: drop-shadow(0 0 18px rgba(247,194,27,.45)); }
-  .badge { display: inline-flex; align-items: center; gap: 8px; margin: 18px 0 22px; padding: 7px 16px 7px 12px; border-radius: 999px;
-    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  .badge { display: inline-flex; align-items: center; gap: 8px; margin: 14px 0 16px; padding: 7px 16px 7px 12px; border-radius: 999px;
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     font-size: 13px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
   .badge::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 10px var(--gold); animation: blink 1.6s infinite; }
-  .steps { list-style: none; margin: 0 0 22px; padding: 0; width: 100%; display: grid; gap: 8px; }
-  .steps li { display: flex; align-items: center; gap: 14px; text-align: left; padding: 12px 14px; border-radius: 14px;
-    background: rgba(11,24,70,.55); border: 1px solid rgba(255,255,255,.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    font-size: 15.5px; line-height: 1.3; color: #e6e9f5; }
+  .steps { list-style: none; margin: 0 0 18px; padding: 0; width: 100%; display: grid; gap: 8px; }
+  .steps li { display: flex; align-items: center; gap: 12px; text-align: left; padding: 11px 13px; border-radius: 14px;
+    background: rgba(11,24,70,.6); border: 1px solid rgba(255,255,255,.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    font-size: 15px; line-height: 1.3; color: #e6e9f5; }
   .steps li b { color: #fff; }
-  .steps .n { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
-    background: var(--gold); color: var(--navy); font-weight: 900; font-size: 15px; box-shadow: 0 0 14px rgba(247,194,27,.5); }
-  #join { position: relative; overflow: hidden; width: 100%; border: 0; border-radius: 18px; padding: 19px 24px;
+  .steps .n { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--gold); color: var(--navy); font-weight: 900; font-size: 14px; box-shadow: 0 0 14px rgba(247,194,27,.45); }
+  #join { position: relative; overflow: hidden; width: 100%; border: 0; border-radius: 18px; padding: 18px 24px;
     font-size: 19px; font-weight: 900; font-style: italic; letter-spacing: .06em; text-transform: uppercase; color: var(--navy);
     background: linear-gradient(180deg, var(--gold-2), var(--gold) 50%, #e2a800);
-    box-shadow: 0 10px 30px rgba(247,194,27,.35), inset 0 1px 0 rgba(255,255,255,.6);
-    animation: glow 2.4s ease-in-out infinite; }
+    box-shadow: 0 10px 30px rgba(247,194,27,.35), inset 0 1px 0 rgba(255,255,255,.6); animation: glow 2.4s ease-in-out infinite; }
   #join::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%;
-    background: linear-gradient(100deg, transparent, rgba(255,255,255,.65), transparent); transform: skewX(-20deg);
-    animation: shine 3.2s ease-in-out infinite; }
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.65), transparent); transform: skewX(-20deg); animation: shine 3.2s ease-in-out infinite; }
   #join:active { transform: scale(.98); }
   @keyframes glow { 50% { box-shadow: 0 10px 44px rgba(247,194,27,.6), inset 0 1px 0 rgba(255,255,255,.6); } }
   @keyframes shine { 0%, 55% { left: -60%; } 100% { left: 130%; } }
-  .fine { margin: 16px 0 0; font-size: 12px; color: rgba(230,233,245,.55); line-height: 1.45; }
-  @media (prefers-reduced-motion: reduce) { #splash .bg, #join, #join::after, #sparks i { animation: none; } }
-  @media (max-height: 640px) { .steps li { padding: 9px 12px; font-size: 14.5px; } .badge { margin: 12px 0 14px; } }
+  .fine { margin: 14px 0 0; font-size: 12px; color: rgba(230,233,245,.55); line-height: 1.45; text-align: center; }
+  .eyebrow { display: flex; align-items: center; gap: 10px; color: var(--gold); font-size: 12px; font-weight: 800; letter-spacing: .28em; text-transform: uppercase; }
+  .eyebrow::before, .eyebrow::after { content: ''; width: 24px; height: 2px; background: linear-gradient(90deg, transparent, var(--gold)); }
+  .eyebrow::after { transform: scaleX(-1); }
+  .hl { margin: 0; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -.02em; line-height: .9; }
+  .goldtext { background: linear-gradient(180deg, #fff3b8 0%, var(--gold) 55%, #d99a00 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  @media (prefers-reduced-motion: reduce) { #splash *, #splash *::before, #splash *::after { animation: none !important; } }
+
+  /* ---------- Look 0: Gym photo (original) ---------- */
+  .look-0 .bg { position: fixed; inset: 0; background: #0b1846; overflow: hidden; animation: drift 24s ease-in-out infinite alternate; transform-origin: 50% 60%; }
+  /* Photo is pushed down: the layer starts above the screen so the roof is cropped off and the court shows. Raise --shift to show less roof. */
+  .look-0 .bg .img { --shift: 40%; position: absolute; left: 0; right: 0; top: calc(-1 * var(--shift)); height: calc(100% + var(--shift));
+    background-size: cover; background-position: center bottom; opacity: 0; transition: opacity .6s; }
+  .look-0 .bg .img.on { opacity: 1; }
+  @keyframes drift { from { transform: scale(1.02); } to { transform: scale(1.1) translate(-1%, 0); } }
+  .look-0 .shade { position: fixed; inset: 0; background: linear-gradient(180deg, rgba(5,10,31,.05) 0%, rgba(5,10,31,.15) 30%, rgba(5,10,31,.6) 52%, rgba(5,10,31,.92) 72%, #050a1f 88%); }
+  #splash.look-0 .content { margin-top: auto; padding-top: 16vh; }
+  .look-0 .hl { font-size: clamp(42px, 13.5vw, 60px); margin-top: 8px; text-shadow: 0 4px 30px rgba(0,0,0,.6); }
+  .look-0 .pick { margin-top: 16px; }
+  .look-0 .hl span { display: block; }
+
+  /* ---------- Look 1: Team Spotlight ---------- */
+  .look-1 .photo { position: relative; width: 100%; height: 31vh; min-height: 190px; flex: none;
+    background: #0b1846 50% 38% / cover no-repeat; }
+  .look-1 .photo .img { position: absolute; inset: 0; background: inherit; background-size: cover; background-position: 50% 38%; opacity: 0; transition: opacity .5s; }
+  .look-1 .photo .img.on { opacity: 1; }
+  .look-1 .photo::after { content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(5,10,31,.35) 0%, rgba(5,10,31,0) 25%, rgba(5,10,31,0) 55%, #050a1f 100%); }
+  .look-1 .content { margin-top: -74px; }
+  .look-1 .logo { width: 70%; max-width: 280px; filter: drop-shadow(0 10px 24px rgba(0,0,0,.6)); animation: rise .8s cubic-bezier(.2,1.3,.4,1) both; }
+  @keyframes rise { from { transform: translateY(20px) scale(.92); opacity: 0; } }
+  .look-1 .eyebrow { margin-top: 6px; }
+
+  /* ---------- Section picker (overhead gym map) ---------- */
+  .pick { width: 100%; margin: 12px 0 14px; }
+  .pick-label { display: flex; justify-content: space-between; align-items: baseline; margin: 0 2px 8px; }
+  .pick-label b { font-size: 17px; font-weight: 800; }
+  .pick-label span { font-size: 13px; color: rgba(230,233,245,.6); }
+  .seatmap { display: block; width: 100%; height: auto; border-radius: 16px; background: #0d1a4a;
+    border: 1px solid rgba(255,255,255,.12); box-shadow: 0 12px 30px rgba(0,0,0,.35); touch-action: manipulation; }
+  .seatmap .sec { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .seatmap .sec .base { fill: #1f3f99; stroke: rgba(255,255,255,.35); stroke-width: 1; transition: fill .2s; }
+  .seatmap .sec .rows { stroke: rgba(255,255,255,.16); stroke-width: 1; }
+  .seatmap .sec text { fill: #fff; font: 900 22px system-ui, -apple-system, sans-serif; text-anchor: middle; dominant-baseline: central; pointer-events: none; transition: fill .2s; }
+  .seatmap .sec small { display: none; }
+  .seatmap .sec:active .base { fill: #2c52c0; }
+  .seatmap .sec.sel .base { fill: #f7c21b; stroke: #fff; stroke-width: 2; }
+  .seatmap .sec.sel .rows { stroke: rgba(11,24,70,.22); }
+  .seatmap .sec.sel text { fill: #0b1846; }
+  .seatmap .pin { fill: #f7c21b; stroke: #fff; stroke-width: 2; transition: transform .35s cubic-bezier(.2,1.4,.4,1), opacity .2s; }
+  .seatmap .ring { fill: none; stroke: #f7c21b; stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: ping 1.6s ease-out infinite; }
+  @keyframes ping { from { transform: scale(.6); opacity: .9; } to { transform: scale(2.2); opacity: 0; } }
+  .pick.shake .seatmap { animation: shake .4s; border-color: #f7c21b; }
+  @keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+  #join.off { background: #2a3355; color: rgba(255,255,255,.6); box-shadow: none; animation: none; }
+  #join.off::after { display: none; }
+
+  /* ---------- Look 2: Logo Hero ---------- */
+  .look-2 { background: radial-gradient(130% 70% at 50% 25%, #1c3a9e 0%, #0b1846 45%, #050a1f 85%); }
+  .look-2 .beams { position: fixed; left: 50%; top: 27%; width: 260vmax; height: 260vmax; margin: -130vmax 0 0 -130vmax;
+    background: conic-gradient(from 0deg, transparent 0 8deg, rgba(247,194,27,.16) 11deg, transparent 15deg 40deg, rgba(255,255,255,.1) 43deg, transparent 47deg 95deg,
+      rgba(247,194,27,.14) 98deg, transparent 102deg 150deg, rgba(255,255,255,.08) 153deg, transparent 157deg 210deg, rgba(247,194,27,.16) 213deg, transparent 217deg 270deg,
+      rgba(255,255,255,.1) 273deg, transparent 277deg 320deg, rgba(247,194,27,.12) 323deg, transparent 327deg);
+    animation: spin 40s linear infinite; pointer-events: none; }
+  .look-2 .floor { position: fixed; left: 0; right: 0; bottom: 0; height: 38%; pointer-events: none;
+    background: linear-gradient(180deg, transparent, rgba(5,10,31,.9) 40%, #050a1f); }
+  .look-2 .content { padding-top: 4vh; }
+  .look-2 .logo { width: 96%; max-width: 360px; animation: logoGlow 3s ease-in-out infinite, rise .9s cubic-bezier(.2,1.3,.4,1) both; }
+  @keyframes logoGlow { 0%, 100% { filter: drop-shadow(0 0 18px rgba(247,194,27,.25)); } 50% { filter: drop-shadow(0 0 36px rgba(247,194,27,.6)); } }
+  .look-2 .hl { font-size: clamp(30px, 9.5vw, 42px); margin: 14px 0 0; text-align: center; }
+
+  /* ---------- Look 3: Every Charger (collage) ---------- */
+  .look-3 { background: linear-gradient(180deg, #0b1846 0%, #050a1f 60%); }
+  .look-3 .collage { position: relative; width: 116%; margin: -10px -8% 0; height: 38vh; min-height: 230px; flex: none;
+    display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6px; transform: rotate(-6deg) translateY(-14px); }
+  .look-3 .collage div { background-size: cover; background-position: 50% 45%; border: 3px solid var(--gold); border-radius: 6px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.5); animation: tileIn .7s cubic-bezier(.2,1.2,.4,1) both; }
+  .look-3 .collage div:nth-child(1) { background-image: url('/team-mbb.jpg'); }
+  .look-3 .collage div:nth-child(2) { background-image: url('/team-wbb.jpg'); animation-delay: .08s; }
+  .look-3 .collage div:nth-child(3) { background-image: url('/team-mvb.jpg'); animation-delay: .16s; }
+  .look-3 .collage div:nth-child(4) { background-image: url('/team-wvb.jpg'); animation-delay: .24s; }
+  @keyframes tileIn { from { opacity: 0; transform: scale(.85); } }
+  .look-3 .collage::after { content: ''; position: absolute; left: -10%; right: -10%; bottom: -30px; height: 55%;
+    background: linear-gradient(180deg, transparent, #070d28 85%); transform: rotate(6deg); }
+  .look-3 .content { margin-top: -70px; }
+  .look-3 .logo { width: 62%; max-width: 250px; filter: drop-shadow(0 8px 20px rgba(0,0,0,.6)); }
+  .look-3 .hl { font-size: clamp(30px, 9.6vw, 42px); text-align: center; margin: 6px 0 0; }
+
+  /* ---------- Look 4: Game Ticket ---------- */
+  .look-4 .bg { position: fixed; inset: -30px; background: url('/team-wvb.jpg') center 40% / cover no-repeat; filter: blur(10px) saturate(1.2); }
+  .look-4 .shade { position: fixed; inset: 0; background: linear-gradient(180deg, rgba(5,10,31,.55), rgba(5,10,31,.85)); }
+  .look-4 .content { padding-top: 22px; }
+  .ticket { position: relative; width: 100%; color: var(--navy); filter: drop-shadow(0 18px 40px rgba(0,0,0,.55)); animation: rise .8s cubic-bezier(.2,1.3,.4,1) both; margin-bottom: 14px; }
+  .ticket .top, .ticket .stub { background: #fbf7ea; position: relative; }
+  .ticket .top { border-radius: 18px 18px 0 0; padding: 18px 18px 16px; text-align: center;
+    background: linear-gradient(180deg, #fffdf5, #f6efda); }
+  .ticket .top::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 18px 18px 0 0;
+    background: repeating-linear-gradient(90deg, var(--navy) 0 18px, var(--gold) 18px 36px); }
+  .ticket .logo { width: 82%; max-width: 290px; margin-top: 6px; }
+  .ticket .kicker { font-size: 11px; font-weight: 800; letter-spacing: .3em; color: #8a6a00; margin-top: 4px; }
+  .ticket .title { font: 900 italic clamp(28px, 8.5vw, 36px)/1 system-ui, sans-serif; text-transform: uppercase; margin: 6px 0 12px; color: var(--navy); }
+  .ticket .cells { display: grid; grid-template-columns: 1.2fr 1fr 1fr; border-top: 2px solid var(--navy); border-bottom: 2px solid var(--navy); }
+  .ticket .cells div { padding: 8px 4px; text-align: center; }
+  .ticket .cells div + div { border-left: 2px solid var(--navy); }
+  .ticket .cells small { display: block; font-size: 9.5px; font-weight: 800; letter-spacing: .18em; color: #6b6b78; }
+  .ticket .cells b { display: block; font-size: 22px; font-weight: 900; line-height: 1.1; }
+  .ticket .tear { height: 22px; position: relative; background:
+      radial-gradient(circle at 0 50%, transparent 11px, #f6efda 12px) left / 51% 100% no-repeat,
+      radial-gradient(circle at 100% 50%, transparent 11px, #f6efda 12px) right / 51% 100% no-repeat; }
+  .ticket .tear::after { content: ''; position: absolute; left: 18px; right: 18px; top: 50%; border-top: 2px dashed rgba(11,24,70,.35); }
+  .ticket .stub { border-radius: 0 0 18px 18px; padding: 14px 16px 16px; background: #f6efda; }
+  .ticket .stub #join { background: var(--navy); color: var(--gold); box-shadow: 0 8px 20px rgba(11,24,70,.35); animation: none; border-radius: 12px; }
+  .ticket .stub .admit { text-align: center; font-size: 11px; font-weight: 800; letter-spacing: .3em; color: #6b6b78; margin-top: 10px; }
+  .look-4 .steps li { background: rgba(5,10,31,.55); }
+  .look-4 .badge { display: none; }
+
+  /* ---------- Look 5: Video Board ---------- */
+  .look-5 { background-color: #030407;
+    background-image: radial-gradient(circle, rgba(255,255,255,.06) 1px, transparent 1.6px); background-size: 7px 7px; }
+  .look-5 .content { padding-top: 18px; }
+  .look-5 .logo { width: 56%; max-width: 210px; margin-bottom: 10px; }
+  .board { position: relative; width: 100%; border-radius: 12px; padding: 7px; background: linear-gradient(180deg, #2a2a30, #121216);
+    box-shadow: 0 0 0 2px #000, 0 0 40px rgba(247,194,27,.18), inset 0 1px 0 rgba(255,255,255,.12); }
+  .board .screen-img { position: relative; height: 25vh; min-height: 160px; border-radius: 6px; overflow: hidden;
+    background: url('/team-wbb.jpg') 50% 40% / cover no-repeat; }
+  .board .screen-img::before { content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px); mix-blend-mode: multiply; }
+  .board .screen-img::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgba(0,0,0,.6)); }
+  .board .live { position: absolute; top: 10px; left: 10px; z-index: 2; background: #e5484d; color: #fff; font: 800 11px/1 system-ui; letter-spacing: .14em; padding: 5px 8px 5px 18px; border-radius: 4px; }
+  .board .live::before { content: ''; position: absolute; left: 7px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: #fff; animation: blink 1s infinite; }
+  .board .ticker { position: absolute; bottom: 8px; left: 0; right: 0; z-index: 2; overflow: hidden; white-space: nowrap; font: 800 13px/1 ui-monospace, Menlo, monospace; letter-spacing: .1em; color: var(--gold); }
+  .board .ticker span { display: inline-block; padding-left: 100%; animation: tick 14s linear infinite; }
+  @keyframes tick { to { transform: translateX(-100%); } }
+  .led { margin: 14px 0 0; text-align: center; font: 900 clamp(36px, 11.5vw, 50px)/.95 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .02em; text-transform: uppercase;
+    color: var(--gold); text-shadow: 0 0 12px rgba(247,194,27,.75), 0 0 30px rgba(247,194,27,.35);
+    -webkit-mask: radial-gradient(circle, #000 1.4px, transparent 1.9px) 0 0 / 4px 4px; mask: radial-gradient(circle, #000 1.4px, transparent 1.9px) 0 0 / 4px 4px; }
+  .led + .led { margin-top: 2px; }
+  .led.white { color: #fff; text-shadow: 0 0 12px rgba(255,255,255,.7); }
+  .look-5 .steps li { background: #0c0d12; border-color: #23242c; border-radius: 6px; font: 600 13.5px/1.3 ui-monospace, Menlo, monospace; text-transform: uppercase; letter-spacing: .03em; color: #cfd2dc; }
+  .look-5 .steps .n { border-radius: 4px; background: transparent; border: 1px solid var(--gold); color: var(--gold); box-shadow: 0 0 10px rgba(247,194,27,.35); font-family: ui-monospace, Menlo, monospace; }
+  .look-5 #join { border-radius: 8px; font-family: ui-monospace, Menlo, monospace; font-style: normal; letter-spacing: .12em; }
+  .look-5 .badge { border-radius: 6px; font-family: ui-monospace, Menlo, monospace; }
+
+  @media (max-height: 700px) {
+    #splash.look-0 .content { padding-top: 10vh; } .look-0 .hl { font-size: 40px; } .look-0 .pick { margin-top: 10px; }
+    .steps li { padding: 8px 12px; font-size: 14px; } .badge { margin: 10px 0 12px; }
+    .look-1 .photo { height: 25vh; min-height: 0; } .look-1 .content { margin-top: -60px; } .pick { margin: 8px 0 10px; } .look-3 .collage { height: 31vh; min-height: 0; } .board .screen-img { height: 20vh; min-height: 0; }
+    .look-1 .logo, .look-3 .logo { width: 58%; } .look-5 .logo { width: 44%; } .fine { margin-top: 10px; } .led { font-size: 34px; }
+    .ticket .logo { width: 62%; } .ticket .title { margin: 2px 0 8px; } .look-4 .steps { display: none; }
+  }
+  #splash.look-2 .content, #splash.look-4 .content { margin-top: auto; margin-bottom: auto; }
   #waiting { z-index: 1; pointer-events: none; transition: opacity .4s; }
   #waiting p { color: #8a8a8a; font-size: 18px; margin: 0; }
+  #waiting .in { color: #fff; font-size: 26px; font-weight: 900; font-style: italic; text-transform: uppercase; margin: 0 0 4px; }
+  #waiting .where { color: #f7c21b; font-size: 14px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; margin: 0 0 26px; }
+  #waiting .tips { list-style: none; padding: 0; margin: 0 0 26px; display: grid; gap: 10px; text-align: left; max-width: 300px; }
+  #waiting .tips li { display: flex; gap: 12px; align-items: center; color: #c9cede; font-size: 16px; }
+  #waiting .tips li i { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 900; font-size: 13px; background: #f7c21b; color: #0b1846; }
   #waiting .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); margin: 0 auto 16px; animation: blink 1.6s infinite; }
   @keyframes blink { 50% { opacity: .2; } }
   #panel { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
@@ -80,6 +216,32 @@
   #panel button { flex: 1; background: #222; color: #fff; border: 1px solid #333; border-radius: 12px; padding: 12px; font-size: 15px; }
   #panel button.on { background: var(--accent); color: #000; border-color: var(--accent); }
   [hidden] { display: none !important; }
+
+  /* ---------- Winner screen ---------- */
+  #win { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; padding: 24px;
+    background: radial-gradient(120% 70% at 50% 30%, #1b3a9a 0%, #0b1846 55%, #050a1f 100%); overflow: hidden; text-align: center; }
+  #win .rays { position: absolute; left: 50%; top: 38%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax;
+    background: repeating-conic-gradient(rgba(247,194,27,.13) 0 10deg, transparent 10deg 20deg); animation: spin 30s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #confetti { position: absolute; inset: 0; pointer-events: none; }
+  #confetti i { position: absolute; top: -20px; width: 8px; height: 14px; border-radius: 2px; animation: fall var(--d) linear var(--delay) infinite; }
+  @keyframes fall { to { transform: translate3d(var(--x), 110vh, 0) rotate(var(--r)); } }
+  .win-card { position: relative; width: 100%; max-width: 360px; animation: pop .6s cubic-bezier(.2, 1.6, .4, 1) both; }
+  @keyframes pop { from { transform: scale(.6); opacity: 0; } }
+  .win-card .eyebrow { justify-content: center; color: #f7c21b; font-size: 12px; font-weight: 800; letter-spacing: .28em; text-transform: uppercase; display: flex; gap: 10px; align-items: center; }
+  .win-card h2 { margin: 6px 0 4px; font-size: clamp(64px, 22vw, 96px); line-height: .85; font-weight: 900; font-style: italic; text-transform: uppercase;
+    background: linear-gradient(180deg, #fff6c9 0%, #f7c21b 55%, #d99a00 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 24px rgba(247,194,27,.55)); }
+  .win-card .prize { font-size: 22px; font-weight: 800; margin: 14px 0 18px; color: #fff; }
+  .win-card .code-label { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: rgba(255,255,255,.65); margin-bottom: 8px; }
+  .win-card .code { display: inline-block; font: 900 52px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .14em; padding: 16px 18px 16px 26px;
+    color: #0b1846; background: linear-gradient(180deg, #ffe680, #f7c21b); border-radius: 16px; box-shadow: 0 12px 40px rgba(247,194,27,.45); }
+  .win-card .claim { margin: 18px 0 22px; font-size: 16px; line-height: 1.4; color: #e6e9f5; }
+  .win-card button { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.25); color: #fff; border-radius: 12px; padding: 12px 18px; font-size: 15px; }
+  #winPill { position: fixed; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 9;
+    background: linear-gradient(180deg, #ffe680, #f7c21b); color: #0b1846; border: 0; border-radius: 999px; padding: 12px 20px;
+    font-weight: 800; font-size: 15px; box-shadow: 0 8px 30px rgba(0,0,0,.5); white-space: nowrap; animation: glowPill 1.6s ease-in-out infinite; }
+  @keyframes glowPill { 50% { box-shadow: 0 8px 30px rgba(247,194,27,.8); } }
 </style>
 </head>
 <body>
@@ -87,26 +249,32 @@
 
 <div id="waiting" class="screen" hidden>
   <div class="dot"></div>
-  <p>You're in! Keep this screen open<br>and wait for the show.</p>
+  <p class="in">You're in!</p>
+  <p class="where" id="waitWhere">Section 1</p>
+  <ul class="tips">
+    <li><i>1</i>Turn brightness all the way up</li>
+    <li><i>2</i>Keep this screen open</li>
+    <li><i>3</i>When the show starts, hold your screen toward the court</li>
+  </ul>
+  <p>Waiting for the show…</p>
 </div>
 
-<div id="splash" class="screen">
-  <div class="bg"></div>
-  <div class="shade"></div>
-  <div id="sparks"></div>
-  <div class="content">
-    <div class="eyebrow">Chargers Light Show</div>
-    <h1>Light up<span>the gym</span></h1>
-    <div class="badge" id="secBadge">Section 1</div>
-    <ol class="steps">
-      <li><span class="n">1</span><span>Turn your screen brightness <b>all the way up</b></span></li>
-      <li><span class="n">2</span><span>Tap <b>Join</b> and keep this page open</span></li>
-      <li><span class="n">3</span><span>When the show starts, hold your screen <b>toward the court</b></span></li>
-    </ol>
-    <button id="join">Join the light show</button>
-    <p class="fine">This show includes flashing lights. Nothing to install. No camera, location or personal info collected.</p>
+<div id="splash" class="screen"></div>
+
+<div id="win" hidden>
+  <div class="rays"></div>
+  <div id="confetti"></div>
+  <div class="win-card">
+    <div class="eyebrow">Chargers Giveaway</div>
+    <h2>You<br>won!</h2>
+    <div class="prize" id="winPrize"></div>
+    <div class="code-label">Your prize code</div>
+    <div class="code" id="winCode"></div>
+    <p class="claim" id="winClaim"></p>
+    <button id="winHide">Back to the light show</button>
   </div>
 </div>
+<button id="winPill" hidden>★ You won! Tap to see your code</button>
 
 <div id="panel">
   <div class="status"><i id="dot"></i><span id="statusText">Connecting…</span></div>
@@ -114,17 +282,119 @@
   <button id="leaveBtn">Leave</button>
 </div>
 
+<script>
+// ---- Sign-in screen designs. Pick with ?look=0..5, otherwise DEFAULT_LOOK is used. ----
+(() => {
+  const DEFAULT_LOOK = 0;
+  const BADGE = '<div class="badge" id="secBadge">Section 1</div>';
+  const STEPS = '<ol class="steps">' +
+    '<li><span class="n">1</span><span>Brightness <b>all the way up</b></span></li>' +
+    '<li><span class="n">2</span><span>Tap <b>Join</b>, keep this page open</span></li>' +
+    '<li><span class="n">3</span><span>Hold your screen <b>toward the court</b></span></li></ol>';
+  const JOIN = '<button id="join">Join the light show</button>';
+  const FINE = '<p class="fine">This show includes flashing lights. Nothing to install. No camera, location or personal info collected.</p>';
+  const LOGO = '<img class="logo" src="/logo-outline.png" alt="Crandall University Chargers">';
+  // Overhead map of the gym: bleachers along the top wall, 4 sections left to right, court below.
+  const SECTIONS = 4;
+  function seatMap() {
+    const x0 = 14, w = 332, gap = 7, sw = (w - gap * (SECTIONS - 1)) / SECTIONS, y = 12, sh = 62;
+    let secs = '';
+    for (let i = 0; i < SECTIONS; i++) {
+      const x = x0 + i * (sw + gap);
+      let rows = '';
+      for (let r = 1; r < 6; r++) rows += `<line class="rows" x1="${x + 4}" x2="${x + sw - 4}" y1="${y + r * sh / 6}" y2="${y + r * sh / 6}"/>`;
+      secs += `<g class="sec" data-s="${i + 1}" role="button" aria-label="Section ${i + 1}"><rect class="base" x="${x}" y="${y}" width="${sw}" height="${sh}" rx="5"/>${rows}<text x="${x + sw / 2}" y="${y + sh / 2}">${i + 1}</text></g>`;
+    }
+    const L = '#1a1a1a';
+    const court = `
+      <rect x="14" y="86" width="332" height="128" rx="8" fill="#e8b81c"/>
+      <rect x="40" y="98" width="280" height="104" fill="#d9a66a" stroke="${L}" stroke-width="1.6"/>
+      <line x1="180" y1="98" x2="180" y2="202" stroke="${L}" stroke-width="1.6"/>
+      <circle cx="180" cy="150" r="15" fill="#e8b81c" stroke="${L}" stroke-width="1.6"/>
+      <rect x="40" y="128" width="46" height="44" fill="#e8b81c" stroke="${L}" stroke-width="1.6"/>
+      <rect x="274" y="128" width="46" height="44" fill="#e8b81c" stroke="${L}" stroke-width="1.6"/>
+      <path d="M86 136 a14 14 0 0 1 0 28" fill="none" stroke="${L}" stroke-width="1.6"/>
+      <path d="M274 136 a14 14 0 0 0 0 28" fill="none" stroke="${L}" stroke-width="1.6"/>
+      <path d="M40 104 h14 a52 52 0 0 1 0 92 h-14" fill="none" stroke="${L}" stroke-width="1.6"/>
+      <path d="M320 104 h-14 a52 52 0 0 0 0 92 h14" fill="none" stroke="${L}" stroke-width="1.6"/>
+      <circle cx="48" cy="150" r="3" fill="none" stroke="#e5484d" stroke-width="1.6"/>
+      <circle cx="312" cy="150" r="3" fill="none" stroke="#e5484d" stroke-width="1.6"/>
+      <text x="180" y="210" fill="rgba(11,24,70,.55)" font-size="8" font-weight="800" letter-spacing="2" text-anchor="middle" font-family="system-ui,sans-serif">COURT</text>`;
+    return `<svg class="seatmap" viewBox="0 0 360 224" xmlns="http://www.w3.org/2000/svg">${secs}${court}
+      <g id="pinG" style="opacity:0"><circle class="ring" cx="0" cy="0" r="7"/><circle class="pin" cx="0" cy="0" r="6"/></g></svg>`;
+  }
+  const PICK = '<div class="pick"><div class="pick-label"><b>Tap your section</b><span id="pickHint">Where are you sitting?</span></div>' + seatMap() + '</div>';
+  const LOOKS = {
+    0: '<div class="bg"><div class="img"></div></div><div class="shade"></div><div id="sparks"></div><div class="content">' +
+       '<div class="eyebrow">Chargers Light Show</div><h1 class="hl">Light up<span class="goldtext">the gym</span></h1>' + PICK + JOIN + FINE + '</div>',
+    1: '<div class="photo"><div class="img"></div></div><div class="content">' + LOGO + '<div class="eyebrow">Light Show</div>' + PICK + JOIN + FINE + '</div>',
+    2: '<div class="beams"></div><div id="sparks"></div><div class="floor"></div><div class="content">' + LOGO +
+       '<h1 class="hl">Light up <span class="goldtext">the gym</span></h1>' + BADGE + STEPS + JOIN + FINE + '</div>',
+    3: '<div class="collage"><div></div><div></div><div></div><div></div></div><div class="content">' + LOGO +
+       '<h1 class="hl">Light it up<br><span class="goldtext" style="font-size:.74em">for every Charger</span></h1>' + BADGE + STEPS + JOIN + FINE + '</div>',
+    4: '<div class="bg"></div><div class="shade"></div><div class="content"><div class="ticket"><div class="top">' +
+       '<img class="logo" src="/logo.png" alt="Crandall University Chargers"><div class="kicker">ADMIT ONE · TONIGHT</div><div class="title">Light Show</div>' +
+       '<div class="cells"><div><small>SECTION</small><b id="tSec">1</b></div><div><small>ROW</small><b>ANY</b></div><div><small>SEAT</small><b>YOURS</b></div></div></div>' +
+       '<div class="tear"></div><div class="stub">' + JOIN + '<div class="admit">NO APP · NO SIGN-UP</div></div></div>' + BADGE + STEPS + FINE + '</div>',
+    5: '<div class="content">' + LOGO + '<div class="board"><div class="screen-img"><span class="live">LIVE</span>' +
+       '<div class="ticker"><span>★ CHARGERS LIGHT SHOW ★ BRIGHTNESS UP ★ PHONES UP ★ LET\'S GO CHARGERS ★</span></div></div></div>' +
+       '<div class="led">Light up</div><div class="led white">the gym</div>' + BADGE + STEPS + JOIN + FINE + '</div>',
+  };
+  const q = parseInt(new URLSearchParams(location.search).get('look'), 10);
+  const look = LOOKS[q] ? q : DEFAULT_LOOK;
+  const sp = document.getElementById('splash');
+  sp.classList.add('look-' + look);
+  sp.innerHTML = LOOKS[look];
+  // Team photo chosen in the control panel (or ?photo=team-xyz.jpg to preview one)
+  const img = sp.querySelector('.photo .img, .bg .img');
+  if (img) {
+    const show = f => { if (!f) return; const pre = new Image(); pre.onload = () => { img.style.backgroundImage = `url('/${f}')`; img.classList.add('on'); }; pre.src = '/' + f; };
+    const qp = new URLSearchParams(location.search).get('photo');
+    if (qp && /^(gym|team-[\w-]+)\.(jpe?g|png|webp)$/i.test(qp)) show(qp);
+    else fetch('/settings', { cache: 'no-store' }).then(r => r.json()).then(s => show(s.photo)).catch(() => show('gym.jpg'));
+  }
+})();
+</script>
 <script src="/effects.js"></script>
 <script>
 (() => {
   const qs = new URLSearchParams(location.search);
-  const section = Math.min(50, Math.max(1, parseInt(qs.get('s'), 10) || 1));
+  const fromUrl = parseInt(qs.get('s'), 10);
+  let saved = 0; try { saved = parseInt(localStorage.getItem('lsSection'), 10) || 0; } catch (e) {}
+  const hasPicker = !!document.querySelector('.seatmap');
+  let section = fromUrl > 0 ? Math.min(50, fromUrl) : (saved || (hasPicker ? 0 : 1));
   const seed = (Math.random() * 2147483647) | 0;
-  document.getElementById('secBadge').textContent = 'Section ' + section;
+  // A stable id for this phone, so a winner who reloads still sees their prize code.
+  let fanId = '';
+  try { fanId = localStorage.getItem('lsFanId') || ''; } catch (e) {}
+  if (!fanId) {
+    fanId = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join('');
+    try { localStorage.setItem('lsFanId', fanId); } catch (e) {}
+  }
+  function setSection(s) {
+    section = s;
+    try { localStorage.setItem('lsSection', String(s)); } catch (e) {}
+    const b = document.getElementById('secBadge'); if (b) b.textContent = 'Section ' + s;
+    const ts = document.getElementById('tSec'); if (ts) ts.textContent = s;
+    document.getElementById('waitWhere').textContent = 'Section ' + s;
+    document.querySelectorAll('.seatmap .sec').forEach(g => g.classList.toggle('sel', +g.dataset.s === s));
+    const g = document.querySelector('.seatmap .sec.sel'), pin = document.getElementById('pinG');
+    if (g && pin) {
+      const r = g.querySelector('.base');
+      pin.setAttribute('transform', `translate(${+r.getAttribute('x') + +r.getAttribute('width') / 2} ${+r.getAttribute('y') + +r.getAttribute('height') + 10})`);
+      pin.style.opacity = 1;
+    }
+    const hint = document.getElementById('pickHint'); if (hint) hint.textContent = 'Section ' + s + ' selected';
+    const j = document.getElementById('join');
+    if (j && hasPicker) { j.classList.remove('off'); j.textContent = 'Join · Section ' + s; }
+  }
+  document.querySelectorAll('.seatmap .sec').forEach(g => g.addEventListener('click', () => { setSection(+g.dataset.s); try { navigator.vibrate && navigator.vibrate(15); } catch (e) {} }));
+  if (section) setSection(section);
+  else if (hasPicker) { const j = document.getElementById('join'); j.classList.add('off'); j.textContent = 'Pick your section first'; }
 
   // Twinkling "phone lights" over the photo
   const sparks = document.getElementById('sparks');
-  for (let i = 0; i < 34; i++) {
+  for (let i = 0; sparks && i < 34; i++) {
     const s = document.createElement('i');
     if (Math.random() < 0.35) s.className = 'g';
     s.style.left = (Math.random() * 100) + '%';
@@ -159,13 +429,42 @@
 
   // ---- Live updates from the operator ----
   function connect() {
-    es = new EventSource('/events?s=' + section);
+    es = new EventSource('/events?s=' + section + '&id=' + fanId);
     es.onopen = () => setStatus(true);
     es.onerror = () => setStatus(false); // EventSource reconnects by itself
     es.onmessage = ev => {
       try { const s = JSON.parse(ev.data); if (!show || s.v !== show.v || s.startAt !== show.startAt) show = s; } catch (e) {}
     };
+    es.addEventListener('win', ev => { try { showWin(JSON.parse(ev.data)); } catch (e) {} });
+    es.addEventListener('winclear', () => { $('win').hidden = true; $('winPill').hidden = true; });
   }
+
+  // ---- Giveaway winner ----
+  let confettiBuilt = false;
+  function showWin(w) {
+    $('winPrize').textContent = w.prize || '';
+    $('winCode').textContent = w.code || '';
+    $('winClaim').textContent = w.claim || '';
+    if (!confettiBuilt) {
+      confettiBuilt = true;
+      const box = $('confetti'), cols = ['#f7c21b', '#ffe680', '#ffffff', '#3d6bff', '#f7c21b'];
+      for (let i = 0; i < 70; i++) {
+        const c = document.createElement('i');
+        c.style.left = (Math.random() * 100) + '%';
+        c.style.background = cols[i % cols.length];
+        c.style.setProperty('--d', (2.5 + Math.random() * 3).toFixed(2) + 's');
+        c.style.setProperty('--delay', (-Math.random() * 5).toFixed(2) + 's');
+        c.style.setProperty('--x', ((Math.random() - 0.5) * 160).toFixed(0) + 'px');
+        c.style.setProperty('--r', ((Math.random() - 0.5) * 1440).toFixed(0) + 'deg');
+        box.appendChild(c);
+      }
+    }
+    $('winPill').hidden = true;
+    $('win').hidden = false;
+    try { navigator.vibrate && navigator.vibrate([300, 120, 300, 120, 600]); } catch (e) {}
+  }
+  $('winHide').onclick = () => { $('win').hidden = true; $('winPill').hidden = false; };
+  $('winPill').onclick = () => { $('winPill').hidden = true; $('win').hidden = false; };
   function setStatus(ok) {
     $('dot').className = ok ? 'ok' : '';
     $('statusText').textContent = ok ? 'Connected — section ' + section : 'Reconnecting… the show keeps running';
@@ -204,8 +503,7 @@
 
   // ---- Render loop ----
   function tick() {
-    const t = show ? (Date.now() + offset - show.startAt) / 1000 : 0;
-    const c = LightFX.frame(show, t, section, seed);
+    const c = LightFX.frame(show, Date.now() + offset, section, seed);
     const css = LightFX.css(c);
     if (css !== lastCss) { light.style.background = css; lastCss = css; }
     waiting.hidden = !!(show && show.effect !== 'off');
@@ -220,9 +518,14 @@
     clearTimeout(panelTimer);
     panelTimer = setTimeout(() => panel.classList.remove('show'), 5000);
   });
+  $('leaveBtn').textContent = 'Change section';
   $('leaveBtn').onclick = () => location.reload();
 
   $('join').onclick = async () => {
+    if (!section) {
+      const p = document.querySelector('.pick'); p.classList.remove('shake'); void p.offsetWidth; p.classList.add('shake');
+      return;
+    }
     $('splash').hidden = true;
     waiting.hidden = false;
     running = true;
