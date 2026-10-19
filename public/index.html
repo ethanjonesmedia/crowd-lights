@@ -55,11 +55,13 @@
   @media (prefers-reduced-motion: reduce) { #splash *, #splash *::before, #splash *::after { animation: none !important; } }
 
   /* ---------- Look 0: Gym photo (original) ---------- */
-  .look-0 .bg { position: fixed; inset: 0; background: #0b1846 center 30% / cover no-repeat; animation: drift 24s ease-in-out infinite alternate; transform-origin: 60% 30%; }
-  .look-0 .bg .img { position: absolute; inset: 0; background-size: cover; background-position: center 30%; opacity: 0; transition: opacity .6s; }
+  .look-0 .bg { position: fixed; inset: 0; background: #0b1846; overflow: hidden; animation: drift 24s ease-in-out infinite alternate; transform-origin: 50% 60%; }
+  /* Photo is pushed down: the layer starts above the screen so the roof is cropped off and the court shows. Raise --shift to show less roof. */
+  .look-0 .bg .img { --shift: 40%; position: absolute; left: 0; right: 0; top: calc(-1 * var(--shift)); height: calc(100% + var(--shift));
+    background-size: cover; background-position: center bottom; opacity: 0; transition: opacity .6s; }
   .look-0 .bg .img.on { opacity: 1; }
-  @keyframes drift { from { transform: scale(1.05); } to { transform: scale(1.22) translate(-2%, 1%); } }
-  .look-0 .shade { position: fixed; inset: 0; background: linear-gradient(180deg, rgba(5,10,31,.1) 0%, rgba(5,10,31,.3) 22%, rgba(5,10,31,.82) 42%, #050a1f 60%); }
+  @keyframes drift { from { transform: scale(1.02); } to { transform: scale(1.1) translate(-1%, 0); } }
+  .look-0 .shade { position: fixed; inset: 0; background: linear-gradient(180deg, rgba(5,10,31,.05) 0%, rgba(5,10,31,.15) 30%, rgba(5,10,31,.6) 52%, rgba(5,10,31,.92) 72%, #050a1f 88%); }
   #splash.look-0 .content { margin-top: auto; padding-top: 16vh; }
   .look-0 .hl { font-size: clamp(42px, 13.5vw, 60px); margin-top: 8px; text-shadow: 0 4px 30px rgba(0,0,0,.6); }
   .look-0 .pick { margin-top: 16px; }
