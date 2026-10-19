@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#050a1f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Light Show</title>
+<style>
+  :root { --fg: #fff; --muted: #a3a3a3; --accent: #ffd400; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: #000; color: var(--fg); overflow: hidden;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  #light { position: fixed; inset: 0; background: #000; }
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px max(20px, env(safe-area-inset-left)); text-align: center; }
+  button { font: inherit; cursor: pointer; }
+
+  /* ---------- Sign-in screen ---------- */
+  #splash { z-index: 3; justify-content: flex-end; overflow-y: auto; background: #050a1f;
+    padding-bottom: calc(28px + env(safe-area-inset-bottom)); --gold: #f7c21b; --gold-2: #ffdf6b; --navy: #0b1846; }
+  #splash .bg { position: fixed; inset: 0; background: url('/gym.jpg') center 30% / cover no-repeat;
+    animation: drift 24s ease-in-out infinite alternate; transform-origin: 60% 30%; }
+  @keyframes drift { from { transform: scale(1.05); } to { transform: scale(1.22) translate(-2%, 1%); } }
+  #splash .shade { position: fixed; inset: 0;
+    background:
+      radial-gradient(120% 60% at 50% 0%, rgba(11,24,70,0) 0%, rgba(11,24,70,.35) 60%),
+      linear-gradient(180deg, rgba(5,10,31,.15) 0%, rgba(5,10,31,.35) 30%, rgba(5,10,31,.88) 55%, #050a1f 78%); }
+  #sparks { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+  #sparks i { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #fff;
+    box-shadow: 0 0 8px 2px rgba(255,255,255,.8); opacity: 0; animation: twinkle var(--d) ease-in-out var(--delay) infinite; }
+  #sparks i.g { background: var(--gold-2); box-shadow: 0 0 10px 3px rgba(247,194,27,.85); }
+  @keyframes twinkle { 0%, 100% { opacity: 0; transform: scale(.4); } 50% { opacity: var(--o); transform: scale(1); } }
+  .content { position: relative; width: 100%; max-width: 380px; display: flex; flex-direction: column; align-items: center; }
+  .eyebrow { display: flex; align-items: center; gap: 10px; color: var(--gold); font-size: 12px; font-weight: 800;
+    letter-spacing: .28em; text-transform: uppercase; margin-bottom: 10px; }
+  .eyebrow::before, .eyebrow::after { content: ''; width: 26px; height: 2px; background: linear-gradient(90deg, transparent, var(--gold)); }
+  .eyebrow::after { transform: scaleX(-1); }
+  h1 { margin: 0; font-size: clamp(44px, 14.5vw, 64px); line-height: .88; font-weight: 900; font-style: italic;
+    text-transform: uppercase; letter-spacing: -.02em; text-shadow: 0 4px 30px rgba(0,0,0,.6); }
+  h1 span { display: block; background: linear-gradient(180deg, #fff3b8 0%, var(--gold) 55%, #d99a00 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 18px rgba(247,194,27,.45)); }
+  .badge { display: inline-flex; align-items: center; gap: 8px; margin: 18px 0 22px; padding: 7px 16px 7px 12px; border-radius: 999px;
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    font-size: 13px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+  .badge::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 10px var(--gold); animation: blink 1.6s infinite; }
+  .steps { list-style: none; margin: 0 0 22px; padding: 0; width: 100%; display: grid; gap: 8px; }
+  .steps li { display: flex; align-items: center; gap: 14px; text-align: left; padding: 12px 14px; border-radius: 14px;
+    background: rgba(11,24,70,.55); border: 1px solid rgba(255,255,255,.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    font-size: 15.5px; line-height: 1.3; color: #e6e9f5; }
+  .steps li b { color: #fff; }
+  .steps .n { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--gold); color: var(--navy); font-weight: 900; font-size: 15px; box-shadow: 0 0 14px rgba(247,194,27,.5); }
+  #join { position: relative; overflow: hidden; width: 100%; border: 0; border-radius: 18px; padding: 19px 24px;
+    font-size: 19px; font-weight: 900; font-style: italic; letter-spacing: .06em; text-transform: uppercase; color: var(--navy);
+    background: linear-gradient(180deg, var(--gold-2), var(--gold) 50%, #e2a800);
+    box-shadow: 0 10px 30px rgba(247,194,27,.35), inset 0 1px 0 rgba(255,255,255,.6);
+    animation: glow 2.4s ease-in-out infinite; }
+  #join::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.65), transparent); transform: skewX(-20deg);
+    animation: shine 3.2s ease-in-out infinite; }
+  #join:active { transform: scale(.98); }
+  @keyframes glow { 50% { box-shadow: 0 10px 44px rgba(247,194,27,.6), inset 0 1px 0 rgba(255,255,255,.6); } }
+  @keyframes shine { 0%, 55% { left: -60%; } 100% { left: 130%; } }
+  .fine { margin: 16px 0 0; font-size: 12px; color: rgba(230,233,245,.55); line-height: 1.45; }
+  @media (prefers-reduced-motion: reduce) { #splash .bg, #join, #join::after, #sparks i { animation: none; } }
+  @media (max-height: 640px) { .steps li { padding: 9px 12px; font-size: 14.5px; } .badge { margin: 12px 0 14px; } }
+  #waiting { z-index: 1; pointer-events: none; transition: opacity .4s; }
+  #waiting p { color: #8a8a8a; font-size: 18px; margin: 0; }
+  #waiting .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); margin: 0 auto 16px; animation: blink 1.6s infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
+  #panel { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    background: rgba(0,0,0,.82); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap; transform: translateY(110%); transition: transform .25s; }
+  #panel.show { transform: none; }
+  #panel .status { flex: 1 1 100%; font-size: 14px; color: #bbb; display: flex; align-items: center; gap: 8px; }
+  #panel .status i { width: 9px; height: 9px; border-radius: 50%; background: #e5484d; display: inline-block; }
+  #panel .status i.ok { background: #30a46c; }
+  #panel button { flex: 1; background: #222; color: #fff; border: 1px solid #333; border-radius: 12px; padding: 12px; font-size: 15px; }
+  #panel button.on { background: var(--accent); color: #000; border-color: var(--accent); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div id="light"></div>
+
+<div id="waiting" class="screen" hidden>
+  <div class="dot"></div>
+  <p>You're in! Keep this screen open<br>and wait for the show.</p>
+</div>
+
+<div id="splash" class="screen">
+  <div class="bg"></div>
+  <div class="shade"></div>
+  <div id="sparks"></div>
+  <div class="content">
+    <div class="eyebrow">Chargers Light Show</div>
+    <h1>Light up<span>the gym</span></h1>
+    <div class="badge" id="secBadge">Section 1</div>
+    <ol class="steps">
+      <li><span class="n">1</span><span>Turn your screen brightness <b>all the way up</b></span></li>
+      <li><span class="n">2</span><span>Tap <b>Join</b> and keep this page open</span></li>
+      <li><span class="n">3</span><span>When the show starts, hold your screen <b>toward the court</b></span></li>
+    </ol>
+    <button id="join">Join the light show</button>
+    <p class="fine">This show includes flashing lights. Nothing to install. No camera, location or personal info collected.</p>
+  </div>
+</div>
+
+<div id="panel">
+  <div class="status"><i id="dot"></i><span id="statusText">Connecting…</span></div>
+  <button id="torchBtn" hidden>Use flashlight too</button>
+  <button id="leaveBtn">Leave</button>
+</div>
+
+<script src="/effects.js"></script>
+<script>
+(() => {
+  const qs = new URLSearchParams(location.search);
+  const section = Math.min(50, Math.max(1, parseInt(qs.get('s'), 10) || 1));
+  const seed = (Math.random() * 2147483647) | 0;
+  document.getElementById('secBadge').textContent = 'Section ' + section;
+
+  // Twinkling "phone lights" over the photo
+  const sparks = document.getElementById('sparks');
+  for (let i = 0; i < 34; i++) {
+    const s = document.createElement('i');
+    if (Math.random() < 0.35) s.className = 'g';
+    s.style.left = (Math.random() * 100) + '%';
+    s.style.top = (8 + Math.random() * 52) + '%';
+    const size = 2 + Math.random() * 3;
+    s.style.width = s.style.height = size + 'px';
+    s.style.setProperty('--d', (2 + Math.random() * 3).toFixed(2) + 's');
+    s.style.setProperty('--delay', (-Math.random() * 5).toFixed(2) + 's');
+    s.style.setProperty('--o', (0.5 + Math.random() * 0.5).toFixed(2));
+    sparks.appendChild(s);
+  }
+
+  const $ = id => document.getElementById(id);
+  const light = $('light'), waiting = $('waiting'), panel = $('panel');
+  let show = null, offset = 0, es = null, wakeLock = null, running = false, lastCss = '';
+
+  // ---- Clock sync: estimate server time offset from the lowest-latency sample ----
+  async function syncClock(samples) {
+    let best = null;
+    for (let i = 0; i < samples; i++) {
+      try {
+        const t0 = Date.now();
+        const r = await fetch('/time', { cache: 'no-store' });
+        const { now } = await r.json();
+        const t1 = Date.now();
+        const rtt = t1 - t0;
+        if (!best || rtt < best.rtt) best = { rtt, off: now - (t0 + t1) / 2 };
+      } catch (e) {}
+    }
+    if (best) offset = best.off;
+  }
+
+  // ---- Live updates from the operator ----
+  function connect() {
+    es = new EventSource('/events?s=' + section);
+    es.onopen = () => setStatus(true);
+    es.onerror = () => setStatus(false); // EventSource reconnects by itself
+    es.onmessage = ev => {
+      try { const s = JSON.parse(ev.data); if (!show || s.v !== show.v || s.startAt !== show.startAt) show = s; } catch (e) {}
+    };
+  }
+  function setStatus(ok) {
+    $('dot').className = ok ? 'ok' : '';
+    $('statusText').textContent = ok ? 'Connected — section ' + section : 'Reconnecting… the show keeps running';
+  }
+
+  // ---- Screen stays awake ----
+  async function keepAwake() {
+    try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && running) { keepAwake(); syncClock(3); }
+  });
+
+  // ---- Optional flashlight (Android Chrome only; iPhone browsers don't allow it) ----
+  let torchTrack = null, torchOn = false, torchLast = 0;
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (!isIOS && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) $('torchBtn').hidden = false;
+  $('torchBtn').onclick = async () => {
+    const btn = $('torchBtn');
+    if (torchTrack) { setTorch(false); torchTrack.stop(); torchTrack = null; btn.classList.remove('on'); btn.textContent = 'Use flashlight too'; return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const track = stream.getVideoTracks()[0];
+      const caps = track.getCapabilities ? track.getCapabilities() : {};
+      if (!caps.torch) { track.stop(); btn.textContent = 'Flashlight not supported'; btn.disabled = true; return; }
+      torchTrack = track; btn.classList.add('on'); btn.textContent = 'Flashlight on';
+    } catch (e) { btn.textContent = 'Flashlight blocked'; }
+  };
+  function setTorch(on) {
+    if (!torchTrack || on === torchOn) return;
+    const now = performance.now();
+    if (now - torchLast < 90) return;
+    torchLast = now; torchOn = on;
+    torchTrack.applyConstraints({ advanced: [{ torch: on }] }).catch(() => {});
+  }
+
+  // ---- Render loop ----
+  function tick() {
+    const t = show ? (Date.now() + offset - show.startAt) / 1000 : 0;
+    const c = LightFX.frame(show, t, section, seed);
+    const css = LightFX.css(c);
+    if (css !== lastCss) { light.style.background = css; lastCss = css; }
+    waiting.hidden = !!(show && show.effect !== 'off');
+    if (torchTrack) setTorch(LightFX.luminance(c) > 0.45);
+    requestAnimationFrame(tick);
+  }
+
+  // Tap anywhere to show/hide the status panel
+  let panelTimer;
+  light.addEventListener('click', () => {
+    panel.classList.toggle('show');
+    clearTimeout(panelTimer);
+    panelTimer = setTimeout(() => panel.classList.remove('show'), 5000);
+  });
+  $('leaveBtn').onclick = () => location.reload();
+
+  $('join').onclick = async () => {
+    $('splash').hidden = true;
+    waiting.hidden = false;
+    running = true;
+    try { await document.documentElement.requestFullscreen?.({ navigationUI: 'hide' }); } catch (e) {}
+    keepAwake();
+    connect();
+    await syncClock(6);
+    setInterval(() => syncClock(3), 30000);
+    requestAnimationFrame(tick);
+  };
+})();
+</script>
+</body>
+</html>

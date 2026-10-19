@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Light Show Control</title>
+<style>
+  :root {
+    --bg: #0b0b0d; --panel: #151518; --line: #26262b; --fg: #f4f4f5; --muted: #9b9ba3;
+    --accent: #ffd400; --danger: #e5484d; --ok: #30a46c; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  header { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 16px; padding: 12px 20px;
+    background: rgba(11,11,13,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  header h1 { font-size: 17px; margin: 0; font-weight: 650; }
+  .count { margin-left: auto; display: flex; align-items: baseline; gap: 6px; }
+  .count b { font-size: 26px; font-variant-numeric: tabular-nums; }
+  .count span { color: var(--muted); }
+  .live { width: 9px; height: 9px; border-radius: 50%; background: var(--danger); display: inline-block; }
+  .live.ok { background: var(--ok); }
+  #blackout { background: var(--danger); border: 0; border-radius: 10px; padding: 10px 18px; font-weight: 700; color: #fff; }
+  main { max-width: 1200px; margin: 0 auto; padding: 20px; display: grid; gap: 20px; grid-template-columns: 1fr; }
+  @media (min-width: 900px) { main { grid-template-columns: 1.35fr 1fr; } .wide { grid-column: 1 / -1; } }
+  section.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 14px; font-weight: 600; }
+  /* crowd preview */
+  #crowd { display: grid; gap: 6px; background: #000; border-radius: 10px; padding: 12px; }
+  .col { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .col i { aspect-ratio: 1; border-radius: 3px; background: #000; display: block; }
+  .col small { grid-column: 1 / -1; text-align: center; color: #666; font-size: 11px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  /* effects */
+  #effects { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .fx { text-align: left; background: #1d1d21; border: 1px solid var(--line); border-radius: 12px; padding: 14px; min-height: 76px; }
+  .fx b { display: block; font-size: 16px; }
+  .fx span { color: var(--muted); font-size: 12.5px; }
+  .fx.active { border-color: var(--accent); background: #2a2610; box-shadow: inset 0 0 0 1px var(--accent); }
+  /* colours */
+  .swatches { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .sw { position: relative; }
+  .sw input[type=color] { width: 54px; height: 54px; border: 2px solid var(--line); border-radius: 12px; padding: 0; background: none; cursor: pointer; }
+  .sw input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+  .sw input[type=color]::-webkit-color-swatch { border: 0; border-radius: 10px; }
+  .sw .x { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; border: 0; background: #444; font-size: 12px; line-height: 20px; padding: 0; }
+  .sw small { display: block; text-align: center; color: var(--muted); font-size: 11px; }
+  .ghost { background: transparent; border: 1px dashed #444; border-radius: 12px; width: 54px; height: 54px; color: var(--muted); font-size: 22px; }
+  .presets { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .preset { display: flex; align-items: center; gap: 8px; background: #1d1d21; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px 6px 6px; font-size: 13px; }
+  .preset .chips { display: flex; } .preset .chips i { width: 16px; height: 16px; border-radius: 50%; margin-right: -4px; border: 2px solid #1d1d21; }
+  .row { display: flex; align-items: center; gap: 14px; margin-top: 16px; flex-wrap: wrap; }
+  .row label { color: var(--muted); min-width: 70px; }
+  input[type=range] { flex: 1; accent-color: var(--accent); min-width: 160px; }
+  input[type=number], input[type=text], input[type=password] { background: #0e0e10; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  input[type=number] { width: 80px; }
+  .hint { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+  /* sections */
+  #secBars { display: grid; gap: 6px; }
+  .bar { display: grid; grid-template-columns: 74px 1fr 48px; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+  .bar div { height: 8px; background: #222; border-radius: 4px; overflow: hidden; } .bar div i { display: block; height: 100%; background: var(--accent); }
+  .bar b { text-align: right; color: var(--fg); font-variant-numeric: tabular-nums; }
+  /* QR */
+  #qrs { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+  .qr { background: #fff; color: #000; border-radius: 12px; padding: 14px; text-align: center; }
+  .qr .code { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
+  .qr .code img, .qr .code svg { width: 100%; height: auto; image-rendering: pixelated; }
+  .qr b { display: block; font-size: 18px; margin-top: 6px; }
+  .qr small { display: block; font-size: 10.5px; color: #555; word-break: break-all; }
+  .btn { background: #26262b; border: 1px solid #333; border-radius: 10px; padding: 10px 14px; }
+  /* login */
+  #login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  #login form { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; width: 100%; max-width: 340px; display: grid; gap: 12px; }
+  #login h1 { margin: 0 0 4px; font-size: 22px; }
+  #login button { background: var(--accent); color: #000; border: 0; border-radius: 10px; padding: 12px; font-weight: 700; }
+  #loginErr { color: var(--danger); font-size: 14px; min-height: 1em; margin: 0; }
+  [hidden] { display: none !important; }
+  @media print {
+    body { background: #fff; } header, main > section:not(#qrCard), #qrCard h2, #qrCard .row, #qrCard .hint { display: none !important; }
+    main { display: block; padding: 0; } #qrCard { border: 0; background: #fff; padding: 0; }
+    #qrs { grid-template-columns: repeat(2, 1fr); gap: 24px; } .qr { border: 2px solid #000; page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div id="login">
+  <form id="loginForm">
+    <h1>Light Show Control</h1>
+    <p class="hint" style="margin:0 0 6px">Enter the control PIN set on your server.</p>
+    <input id="pin" type="password" inputmode="numeric" placeholder="PIN" autocomplete="current-password" required>
+    <button>Unlock</button>
+    <p id="loginErr"></p>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <header>
+    <h1>Light Show Control</h1>
+    <span class="live" id="live" title="Connection to server"></span>
+    <div class="count"><b id="total">0</b><span>phones connected</span></div>
+    <button id="blackout" title="Shortcut: B or Esc">Blackout</button>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Live crowd preview</h2>
+      <div id="crowd"></div>
+      <p class="hint">Each dot is a simulated phone, running the same code the fans' phones run.</p>
+    </section>
+
+    <section class="card">
+      <h2>Phones by section</h2>
+      <div id="secBars"></div>
+      <div class="row">
+        <label for="sections">Sections</label>
+        <input id="sections" type="number" min="1" max="50" value="4">
+      </div>
+      <p class="hint">Number your sections in order along the stands (left to right) so the Wave rolls across the crowd.</p>
+    </section>
+
+    <section class="card wide">
+      <h2>Effect <span style="text-transform:none;letter-spacing:0">— shortcuts 1–9</span></h2>
+      <div id="effects"></div>
+    </section>
+
+    <section class="card wide">
+      <h2>Colours</h2>
+      <div class="swatches" id="swatches"></div>
+      <div class="presets" id="presets"></div>
+      <div class="row">
+        <label for="speed">Speed</label>
+        <input id="speed" type="range" min="0.25" max="4" step="0.05" value="1">
+        <span id="speedVal" style="width:48px;text-align:right;font-variant-numeric:tabular-nums">1.00×</span>
+      </div>
+    </section>
+
+    <section class="card wide" id="qrCard">
+      <h2>QR codes for the stands</h2>
+      <div class="row" style="margin-top:0">
+        <label for="baseUrl">Fan link</label>
+        <input id="baseUrl" type="text" style="flex:1;min-width:220px">
+        <button class="btn" id="printBtn">Print QR codes</button>
+      </div>
+      <p class="hint">Post each section's code in that section (signs, scoreboard, programs). Fans scan, tap Join, and they're in.</p>
+      <div id="qrs" style="margin-top:16px"></div>
+    </section>
+  </main>
+</div>
+
+<script src="/effects.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  let PIN = '';
+  try { PIN = sessionStorage.getItem('lsPin') || ''; } catch (e) {}
+
+  let show = null, offset = 0;
+  const state = { effect: 'off', colors: ['#ffffff', '#c8102e'], speed: 1, sections: 4 };
+  const PRESETS = [
+    { name: 'White', colors: ['#ffffff'] },
+    { name: 'Red & White', colors: ['#c8102e', '#ffffff'] },
+    { name: 'Blue & Gold', colors: ['#0033a0', '#ffc72c'] },
+    { name: 'Green & White', colors: ['#00843d', '#ffffff'] },
+    { name: 'Purple & Gold', colors: ['#552583', '#fdb927'] },
+    { name: 'Rainbow', colors: ['#ff2d2d', '#ff9f1a', '#ffe81a', '#2ed573', '#1e90ff', '#9b59ff'] },
+  ];
+
+  async function api(path, opts = {}) {
+    const r = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', 'x-pin': PIN, ...(opts.headers || {}) } });
+    if (r.status === 401) throw new Error('pin');
+    return r.json();
+  }
+
+  // ---------- login ----------
+  $('loginForm').onsubmit = async e => {
+    e.preventDefault();
+    PIN = $('pin').value.trim();
+    try { await api('/api/stats'); start(); }
+    catch (err) { $('loginErr').textContent = err.message === 'pin' ? 'Wrong PIN.' : 'Cannot reach the server.'; }
+  };
+  if (PIN) api('/api/stats').then(start).catch(() => {});
+
+  function start() {
+    try { sessionStorage.setItem('lsPin', PIN); } catch (e) {}
+    $('login').hidden = true; $('app').hidden = false;
+    $('baseUrl').value = location.origin + '/';
+    buildEffects(); buildPresets();
+    syncClock();
+    const es = new EventSource('/events?role=control');
+    es.onopen = () => $('live').classList.add('ok');
+    es.onerror = () => $('live').classList.remove('ok');
+    es.onmessage = ev => { show = JSON.parse(ev.data); adopt(show); };
+    pollStats(); setInterval(pollStats, 2000);
+    requestAnimationFrame(renderCrowd);
+  }
+
+  async function syncClock() {
+    let best = null;
+    for (let i = 0; i < 5; i++) {
+      const t0 = Date.now(); const { now } = await (await fetch('/time', { cache: 'no-store' })).json(); const t1 = Date.now();
+      if (!best || t1 - t0 < best.rtt) best = { rtt: t1 - t0, off: now - (t0 + t1) / 2 };
+    }
+    offset = best.off;
+  }
+
+  // ---------- sending ----------
+  let sendTimer;
+  function send(immediate) {
+    clearTimeout(sendTimer);
+    const go = () => api('/api/show', { method: 'POST', body: JSON.stringify(state) }).then(s => { show = s; }).catch(() => {});
+    immediate ? go() : (sendTimer = setTimeout(go, 120));
+  }
+
+  // Pull server state into the UI (first load, or another operator changed it)
+  let adopted = -1;
+  function adopt(s) {
+    if (s.v === adopted) return; adopted = s.v;
+    Object.assign(state, { effect: s.effect, colors: s.colors.slice(), speed: s.speed, sections: s.sections });
+    renderControls();
+  }
+
+  // ---------- UI ----------
+  function buildEffects() {
+    const box = $('effects'); box.innerHTML = '';
+    Object.entries(LightFX.EFFECTS).forEach(([key, fx], i) => {
+      const b = document.createElement('button');
+      b.className = 'fx'; b.dataset.fx = key;
+      b.innerHTML = `<b></b><span></span>`;
+      b.querySelector('b').textContent = `${i + 1}. ${fx.label}`;
+      b.querySelector('span').textContent = fx.desc;
+      b.onclick = () => setEffect(key);
+      box.appendChild(b);
+    });
+  }
+  function setEffect(key) { state.effect = key; renderControls(); send(true); }
+
+  function buildPresets() {
+    const box = $('presets');
+    PRESETS.forEach(p => {
+      const b = document.createElement('button'); b.className = 'preset';
+      b.innerHTML = '<span class="chips"></span><span></span>';
+      p.colors.forEach(c => { const i = document.createElement('i'); i.style.background = c; b.firstChild.appendChild(i); });
+      b.lastChild.textContent = p.name;
+      b.onclick = () => { state.colors = p.colors.slice(); renderControls(); send(true); };
+      box.appendChild(b);
+    });
+  }
+
+  function renderControls() {
+    document.querySelectorAll('.fx').forEach(b => b.classList.toggle('active', b.dataset.fx === state.effect));
+    const sw = $('swatches'); sw.innerHTML = '';
+    state.colors.forEach((c, i) => {
+      const d = document.createElement('div'); d.className = 'sw';
+      const inp = document.createElement('input'); inp.type = 'color'; inp.value = c;
+      inp.oninput = () => { state.colors[i] = inp.value; send(); };
+      d.appendChild(inp);
+      if (state.colors.length > 1) {
+        const x = document.createElement('button'); x.className = 'x'; x.textContent = '×'; x.title = 'Remove';
+        x.onclick = () => { state.colors.splice(i, 1); renderControls(); send(true); };
+        d.appendChild(x);
+      }
+      const lbl = document.createElement('small'); lbl.textContent = i === 0 ? 'Main' : 'Colour ' + (i + 1);
+      d.appendChild(lbl);
+      sw.appendChild(d);
+    });
+    if (state.colors.length < 6) {
+      const add = document.createElement('button'); add.className = 'ghost'; add.textContent = '+'; add.title = 'Add colour';
+      add.onclick = () => { state.colors.push('#1e90ff'); renderControls(); send(true); };
+      sw.appendChild(add);
+    }
+    $('speed').value = state.speed; $('speedVal').textContent = (+state.speed).toFixed(2) + '×';
+    if (document.activeElement !== $('sections')) $('sections').value = state.sections;
+    buildCrowd(); buildQRs();
+  }
+
+  $('speed').oninput = e => { state.speed = +e.target.value; $('speedVal').textContent = state.speed.toFixed(2) + '×'; send(); };
+  $('sections').onchange = e => { state.sections = Math.min(50, Math.max(1, +e.target.value || 1)); renderControls(); send(true); };
+  $('blackout').onclick = () => setEffect('off');
+  $('baseUrl').onchange = buildQRs;
+  $('printBtn').onclick = () => window.print();
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    const keys = Object.keys(LightFX.EFFECTS);
+    if (e.key === 'b' || e.key === 'B' || e.key === 'Escape') setEffect('off');
+    const n = parseInt(e.key, 10); if (n >= 1 && n <= keys.length) setEffect(keys[n - 1]);
+  });
+
+  // ---------- crowd preview ----------
+  let dots = [];
+  function buildCrowd() {
+    const S = state.sections, box = $('crowd');
+    if (box.dataset.s == S) return; box.dataset.s = S;
+    box.style.gridTemplateColumns = `repeat(${Math.min(S, 12)}, 1fr)`;
+    box.innerHTML = ''; dots = [];
+    for (let s = 1; s <= S; s++) {
+      const col = document.createElement('div'); col.className = 'col';
+      for (let k = 0; k < 12; k++) {
+        const i = document.createElement('i'); col.appendChild(i);
+        dots.push({ el: i, s, seed: (s * 7919 + k * 104729) | 0 });
+      }
+      const lab = document.createElement('small'); lab.textContent = 'S' + s; col.appendChild(lab);
+      box.appendChild(col);
+    }
+  }
+  function renderCrowd() {
+    if (show) {
+      const t = (Date.now() + offset - show.startAt) / 1000;
+      for (const d of dots) d.el.style.background = LightFX.css(LightFX.frame(show, t, d.s, d.seed));
+    }
+    requestAnimationFrame(renderCrowd);
+  }
+
+  // ---------- stats ----------
+  async function pollStats() {
+    try {
+      const st = await api('/api/stats');
+      $('total').textContent = st.total.toLocaleString();
+      const max = Math.max(1, ...Object.values(st.bySection));
+      const box = $('secBars'); box.innerHTML = '';
+      for (let s = 1; s <= state.sections; s++) {
+        const n = st.bySection[s] || 0;
+        const row = document.createElement('div'); row.className = 'bar';
+        row.innerHTML = `<span>Section ${s}</span><div><i style="width:${(n / max) * 100}%"></i></div><b>${n}</b>`;
+        box.appendChild(row);
+      }
+      $('live').classList.add('ok');
+    } catch (e) { $('live').classList.remove('ok'); }
+  }
+
+  // ---------- QR codes ----------
+  function buildQRs() {
+    const box = $('qrs'); box.innerHTML = '';
+    let base = $('baseUrl').value.trim() || location.origin + '/';
+    for (let s = 1; s <= state.sections; s++) {
+      const url = base + (base.includes('?') ? '&' : '?') + 's=' + s;
+      const card = document.createElement('div'); card.className = 'qr';
+      const code = document.createElement('div'); code.className = 'code';
+      if (window.qrcode) {
+        const q = qrcode(0, 'M'); q.addData(url); q.make();
+        code.innerHTML = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
+      } else {
+        code.textContent = 'QR library could not load — check internet connection';
+        code.style.cssText += 'font-size:12px;color:#a00;padding:10px';
+      }
+      const b = document.createElement('b'); b.textContent = 'Section ' + s;
+      const sm = document.createElement('small'); sm.textContent = url;
+      card.append(code, b, sm); box.appendChild(card);
+    }
+  }
+})();
+</script>
+</body>
+</html>
