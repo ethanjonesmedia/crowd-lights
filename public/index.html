@@ -64,7 +64,9 @@
 
   /* ---------- Look 1: Team Spotlight ---------- */
   .look-1 .photo { position: relative; width: 100%; height: 31vh; min-height: 190px; flex: none;
-    background: url('/team-mbb.jpg') 50% 38% / cover no-repeat; }
+    background: #0b1846 50% 38% / cover no-repeat; }
+  .look-1 .photo .img { position: absolute; inset: 0; background: inherit; background-size: cover; background-position: 50% 38%; opacity: 0; transition: opacity .5s; }
+  .look-1 .photo .img.on { opacity: 1; }
   .look-1 .photo::after { content: ''; position: absolute; inset: 0;
     background: linear-gradient(180deg, rgba(5,10,31,.35) 0%, rgba(5,10,31,0) 25%, rgba(5,10,31,0) 55%, #050a1f 100%); }
   .look-1 .content { margin-top: -74px; }
@@ -319,7 +321,7 @@
   const LOOKS = {
     0: '<div class="bg"></div><div class="shade"></div><div id="sparks"></div><div class="content">' +
        '<div class="eyebrow">Chargers Light Show</div><h1 class="hl">Light up<span class="goldtext">the gym</span></h1>' + BADGE + STEPS + JOIN + FINE + '</div>',
-    1: '<div class="photo"></div><div class="content">' + LOGO + '<div class="eyebrow">Light Show</div>' + PICK + JOIN + FINE + '</div>',
+    1: '<div class="photo"><div class="img"></div></div><div class="content">' + LOGO + '<div class="eyebrow">Light Show</div>' + PICK + JOIN + FINE + '</div>',
     2: '<div class="beams"></div><div id="sparks"></div><div class="floor"></div><div class="content">' + LOGO +
        '<h1 class="hl">Light up <span class="goldtext">the gym</span></h1>' + BADGE + STEPS + JOIN + FINE + '</div>',
     3: '<div class="collage"><div></div><div></div><div></div><div></div></div><div class="content">' + LOGO +
@@ -337,6 +339,14 @@
   const sp = document.getElementById('splash');
   sp.classList.add('look-' + look);
   sp.innerHTML = LOOKS[look];
+  // Team photo chosen in the control panel (or ?photo=team-xyz.jpg to preview one)
+  const img = sp.querySelector('.photo .img');
+  if (img) {
+    const show = f => { if (!f) return; const pre = new Image(); pre.onload = () => { img.style.backgroundImage = `url('/${f}')`; img.classList.add('on'); }; pre.src = '/' + f; };
+    const qp = new URLSearchParams(location.search).get('photo');
+    if (qp && /^team-[\w-]+\.(jpe?g|png|webp)$/i.test(qp)) show(qp);
+    else fetch('/settings', { cache: 'no-store' }).then(r => r.json()).then(s => show(s.photo)).catch(() => show('team-mbb.jpg'));
+  }
 })();
 </script>
 <script src="/effects.js"></script>

@@ -25,6 +25,12 @@ let show = {
   v: 0,
 };
 
+// Sign-in screen photo: any file in /public named team-*.jpg/.jpeg/.png/.webp can be picked from the control panel.
+function listPhotos() {
+  try { return fs.readdirSync(PUBLIC).filter(f => /^team-[\w-]+\.(jpe?g|png|webp)$/i.test(f)).sort(); } catch { return []; }
+}
+const settings = { photo: process.env.DEFAULT_PHOTO || 'team-mbb.jpg' };
+
 const fans = new Set();     // { res, section, id }
 const watchers = new Set(); // control panels
 let winner = null;          // { id, code, prize, claim, section, at }
@@ -158,6 +164,11 @@ const server = http.createServer((req, res) => {
   const p = url.pathname;
 
   if (req.method === 'GET' && p === '/time') return json(res, 200, { now: Date.now() });
+  if (req.method === 'GET' && p === '/settings') {
+    const photos = listPhotos();
+    const photo = photos.includes(settings.photo) ? settings.photo : (photos[0] || '');
+    return json(res, 200, { photo, photos });
+  }
 
   if (req.method === 'GET' && p === '/events') {
     const section = clamp(parseInt(url.searchParams.get('s'), 10) || 1, 1, 50);
@@ -198,6 +209,10 @@ const server = http.createServer((req, res) => {
         if (winner) sendToFan(winner.id, 'winclear', {});
         winner = null;
         return json(res, 200, { ok: true });
+      }
+      if (p === '/api/settings') {
+        if (typeof input.photo === 'string' && listPhotos().includes(input.photo)) settings.photo = input.photo;
+        return json(res, 200, { photo: settings.photo, photos: listPhotos() });
       }
       if (p === '/api/winner/reset') { // let everyone be eligible again (e.g. a new game)
         pastWinnerIds.clear(); history.length = 0;

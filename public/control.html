@@ -127,6 +127,14 @@
   #progress i { display: block; height: 100%; width: 0; background: var(--accent); }
   #progressText { color: var(--muted); font-size: 13px; margin-top: 6px; font-variant-numeric: tabular-nums; }
 
+  /* sign-in photo picker */
+  .photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+  .ph { position: relative; padding: 0; border: 2px solid var(--line); border-radius: 12px; overflow: hidden; background: #000; text-align: left; }
+  .ph i { display: block; aspect-ratio: 3 / 2; background-size: cover; background-position: 50% 38%; }
+  .ph span { display: block; padding: 8px 10px; font-size: 13px; color: var(--muted); background: #1d1d21; }
+  .ph.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .ph.on span { color: var(--fg); }
+  .ph.on::after { content: 'LIVE'; position: absolute; top: 8px; right: 8px; background: var(--accent); color: #111; font: 800 11px/1 system-ui; letter-spacing: .1em; padding: 5px 7px; border-radius: 5px; }
   /* QR */
   #qrs { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
   .qr { background: #fff; color: #000; border-radius: 12px; padding: 14px; text-align: center; }
@@ -292,6 +300,12 @@
       <p class="hint">Routines are saved in this browser. Use Export to back them up or move them to another computer.</p>
     </section>
 
+    <section class="card wide">
+      <h2>Sign-in screen photo</h2>
+      <div id="photos" class="photos"></div>
+      <p class="hint">Pick the team photo fans see when they scan the QR code. It changes for new visitors right away. To add your own photo, upload it to the <b>public</b> folder on GitHub with a name starting with <b>team-</b> (for example <b>team-hockey.jpg</b>). It shows up here after Railway updates. <a href="/" target="_blank" style="color:var(--accent)">Open the fan page ↗</a></p>
+    </section>
+
     <section class="card wide" id="qrCard">
       <h2>QR codes for the stands</h2>
       <div class="row" style="margin-top:0">
@@ -363,6 +377,7 @@
     es.onerror = () => $('live').classList.remove('ok');
     es.onmessage = ev => { show = JSON.parse(ev.data); adopt(show); };
     pollStats(); setInterval(pollStats, 2000);
+    loadPhotos();
     requestAnimationFrame(loop);
   }
 
@@ -772,6 +787,23 @@
     }
     g2.globalCompositeOperation = 'source-over';
   }
+
+  // ---------- sign-in photo ----------
+  const nice = f => f.replace(/^team-/, '').replace(/\.\w+$/, '').replace(/[-_]/g, ' ')
+    .replace(/\bmbb\b/i, "Men's basketball").replace(/\bwbb\b/i, "Women's basketball").replace(/\bmvb\b/i, "Men's volleyball").replace(/\bwvb\b/i, "Women's volleyball");
+  function renderPhotos(s) {
+    const box = $('photos'); box.innerHTML = '';
+    if (!s.photos.length) { box.textContent = 'No team-*.jpg photos found in the public folder.'; return; }
+    s.photos.forEach(f => {
+      const b = document.createElement('button'); b.className = 'ph' + (f === s.photo ? ' on' : '');
+      const i = document.createElement('i'); i.style.backgroundImage = `url('/${f}')`;
+      const t = document.createElement('span'); t.textContent = nice(f);
+      b.append(i, t);
+      b.onclick = () => post('/api/settings', { photo: f }).then(renderPhotos).catch(() => {});
+      box.appendChild(b);
+    });
+  }
+  function loadPhotos() { fetch('/settings', { cache: 'no-store' }).then(r => r.json()).then(renderPhotos).catch(() => {}); }
 
   // ---------- stats ----------
   async function pollStats() {
