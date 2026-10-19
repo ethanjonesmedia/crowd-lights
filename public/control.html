@@ -41,6 +41,15 @@
   .row label { color: var(--muted); min-width: 70px; }
   input[type=range] { flex: 1; accent-color: var(--accent); min-width: 160px; }
 
+  /* gym view */
+  .gymhead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .gymhead h2 { margin: 0; margin-right: auto; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { background: #1d1d21; border: 0; padding: 7px 12px; font-size: 13px; color: var(--muted); }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--accent); color: #111; font-weight: 700; }
+  .seglbl { color: var(--muted); font-size: 13px; }
+  #gymCanvas { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 10px; background: #000; }
   /* crowd preview */
   #crowd { display: grid; gap: 6px; background: #000; border-radius: 10px; padding: 12px; }
   .col { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
@@ -163,6 +172,18 @@
   </header>
 
   <main>
+    <section class="card wide">
+      <div class="gymhead">
+        <h2>Gym view</h2>
+        <span class="seglbl">House lights</span>
+        <div class="seg" id="houseSeg"><button data-v="on">On</button><button data-v="dim">Dim</button><button data-v="dark">Dark</button></div>
+        <span class="seglbl">Crowd</span>
+        <div class="seg" id="fillSeg"><button data-v="0.3">Light</button><button data-v="0.6">Half</button><button data-v="0.9">Packed</button></div>
+      </div>
+      <canvas id="gymCanvas"></canvas>
+      <p class="hint">A simulation of the fans' phones in the bleachers, running live with whatever you're sending. Sections go left to right as seen from this angle.</p>
+    </section>
+
     <section class="card">
       <h2>Live crowd preview</h2>
       <div id="crowd"></div>
@@ -426,7 +447,7 @@
     const np = show && show.effect === 'routine' ? 'Routine: ' + (show.routineName || '') : fxLabel(state.effect);
     $('nowPlaying').innerHTML = 'Now: <b></b>' + (state.bpm ? ' · ' + Math.round(state.bpm) + ' BPM' : '');
     $('nowPlaying').querySelector('b').textContent = np;
-    buildCrowd(); buildQRs(); buildSectionSelect(); renderSteps();
+    buildCrowd(); buildGym(); buildQRs(); buildSectionSelect(); renderSteps();
   }
 
   $('speed').oninput = e => { state.speed = +e.target.value; $('speedVal').textContent = state.speed.toFixed(2) + '×'; send(); };
@@ -646,6 +667,7 @@
     if (show) {
       const now = serverNow();
       for (const d of dots) d.el.style.background = LightFX.css(LightFX.frame(show, now, d.s, d.seed));
+      drawGym(now);
       // beat light on the TAP button
       if (show.bpm && show.beatAt) {
         const ph = ((now - show.beatAt) / 1000 * show.bpm / 60) % 1;
@@ -666,6 +688,83 @@
       } else if (lastStep !== -1) { lastStep = -1; document.querySelectorAll('#steps li.now').forEach(li => li.classList.remove('now')); }
     }
     requestAnimationFrame(loop);
+  }
+
+  // ---------- gym view (phones drawn onto the bleachers in the photo) ----------
+  // Bleacher outline in the 800x450 photo: top-left, top-right, bottom-right, bottom-left.
+  const GYM = { w: 800, h: 450, quad: [[68, 152], [553, 161], [553, 198], [100, 221]], rows: 9, perRow: 120 };
+  const gymImg = new Image(); let gymImgOk = false;
+  gymImg.onload = () => { gymImgOk = true; }; gymImg.src = '/gym-view.jpg';
+  let house = store.get('lsHouse', 'dim'), crowdFill = +store.get('lsFill', 0.6), gymDots = [], gymKey = '';
+  const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  function bleacher(u, v) { const q = GYM.quad; return lerp(lerp(q[0], q[1], u), lerp(q[3], q[2], u), v); }
+  function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function buildGym() {
+    const key = state.sections + '|' + crowdFill;
+    if (key === gymKey) return; gymKey = key;
+    const r = rng(20261018), S = state.sections; gymDots = [];
+    for (let row = 0; row < GYM.rows; row++) {
+      for (let c = 0; c < GYM.perRow; c++) {
+        if (r() > crowdFill) continue;
+        const u = Math.min(0.999, Math.max(0, (c + 0.5 + (r() - 0.5) * 0.7) / GYM.perRow));
+        const v = (row + 0.55 + (r() - 0.5) * 0.35) / GYM.rows;
+        const [x, y] = bleacher(u, v);
+        const localH = bleacher(u, 1)[1] - bleacher(u, 0)[1];
+        gymDots.push({ x, y, r: Math.max(0.9, localH / GYM.rows * 0.3), s: Math.min(S, Math.floor(u * S) + 1), seed: (r() * 2147483647) | 0 });
+      }
+    }
+  }
+  function segInit(id, cur, onPick) {
+    const seg = $(id);
+    const paint = v => seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v == v));
+    seg.querySelectorAll('button').forEach(b => b.onclick = () => { onPick(b.dataset.v); paint(b.dataset.v); });
+    paint(cur);
+  }
+  segInit('houseSeg', house, v => { house = v; store.set('lsHouse', v); });
+  segInit('fillSeg', crowdFill, v => { crowdFill = +v; store.set('lsFill', crowdFill); buildGym(); });
+
+  const gc = $('gymCanvas'), g2 = gc.getContext('2d');
+  function drawGym(now) {
+    const cw = Math.round(gc.clientWidth * Math.min(2, devicePixelRatio || 1));
+    if (!cw) return;
+    const ch = Math.round(cw * 9 / 16);
+    if (gc.width !== cw || gc.height !== ch) { gc.width = cw; gc.height = ch; }
+    const k = cw / GYM.w;
+    g2.globalCompositeOperation = 'source-over';
+    g2.setTransform(1, 0, 0, 1, 0, 0);
+    if (gymImgOk) g2.drawImage(gymImg, 0, 0, cw, ch); else { g2.fillStyle = '#000'; g2.fillRect(0, 0, cw, ch); }
+    const darkness = house === 'on' ? 0.12 : house === 'dim' ? 0.6 : 0.88;
+    g2.fillStyle = `rgba(2,4,14,${darkness})`; g2.fillRect(0, 0, cw, ch);
+    g2.setTransform(k, 0, 0, k, 0, 0);
+    g2.globalCompositeOperation = 'lighter';
+    const glow = house === 'on' ? 0.55 : house === 'dim' ? 0.85 : 1;
+    const S = state.sections, sums = Array.from({ length: S + 1 }, () => [0, 0, 0, 0]);
+    for (const d of gymDots) {
+      const c = LightFX.frame(show, now, d.s, d.seed);
+      const acc = sums[d.s]; acc[0] += c[0]; acc[1] += c[1]; acc[2] += c[2]; acc[3]++;
+      if (c[0] + c[1] + c[2] < 12) continue;
+      const rgb = `${c[0] | 0},${c[1] | 0},${c[2] | 0}`;
+      g2.fillStyle = `rgba(${rgb},${0.13 * glow})`;
+      g2.beginPath(); g2.arc(d.x, d.y, d.r * 4.2, 0, 6.2832); g2.fill();
+      g2.fillStyle = `rgba(${rgb},${0.95 * glow})`;
+      g2.beginPath(); g2.arc(d.x, d.y, d.r, 0, 6.2832); g2.fill();
+    }
+    // Reflection of each section's light on the polished floor
+    for (let s = 1; s <= S; s++) {
+      const a = sums[s]; if (!a[3]) continue;
+      const col = [a[0] / a[3], a[1] / a[3], a[2] / a[3]];
+      if (col[0] + col[1] + col[2] < 6) continue;
+      const [x0, yb] = bleacher((s - 0.5) / S, 1);
+      const span = bleacher(s / S, 1)[0] - bleacher((s - 1) / S, 1)[0];
+      g2.save(); g2.translate(x0, yb + 22); g2.scale(1, 0.32);
+      const rad = span * 0.85;
+      const gr = g2.createRadialGradient(0, 0, 0, 0, 0, rad);
+      gr.addColorStop(0, `rgba(${col.map(v => v | 0).join(',')},${0.45 * glow})`);
+      gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g2.fillStyle = gr; g2.beginPath(); g2.arc(0, 0, rad, 0, 6.2832); g2.fill();
+      g2.restore();
+    }
+    g2.globalCompositeOperation = 'source-over';
   }
 
   // ---------- stats ----------
