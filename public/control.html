@@ -134,6 +134,9 @@
   .qr .code svg { width: 100%; height: auto; }
   .qr b { display: block; font-size: 18px; margin-top: 6px; }
   .qr small { display: block; font-size: 10.5px; color: #555; word-break: break-all; }
+  .qr.main { max-width: 340px; padding: 22px; }
+  .qr.main b { font-size: 24px; }
+  .qr.main .sub { font-size: 14px; color: #333; margin-top: 2px; }
   /* login */
   #login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
   #login form { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; width: 100%; max-width: 340px; display: grid; gap: 12px; }
@@ -144,7 +147,8 @@
   @media (max-width: 520px) { .beat { grid-template-columns: 1fr; justify-items: center; text-align: center; } .beat .btns { justify-content: center; }
     #steps li { grid-template-columns: 22px 1fr; } #steps .dur, #steps .acts { grid-column: 2; } }
   @media print {
-    body { background: #fff; } header, main > section:not(#qrCard), #qrCard h2, #qrCard .row, #qrCard .hint { display: none !important; }
+    body { background: #fff; } header, main > section:not(#qrCard), #qrCard h2, #qrCard .row, #qrCard .hint, #qrCard details:not([open]) { display: none !important; }
+    .qr.main { max-width: 520px; margin: 0 auto 30px; }
     main { display: block; padding: 0; } #qrCard { border: 0; background: #fff; padding: 0; }
     #qrs { grid-template-columns: repeat(2, 1fr); gap: 24px; } .qr { border: 2px solid #000; page-break-inside: avoid; }
   }
@@ -295,8 +299,10 @@
         <input id="baseUrl" type="text" style="flex:1;min-width:220px">
         <button class="btn" id="printBtn">Print QR codes</button>
       </div>
-      <p class="hint">Post each section's code in that section (signs, scoreboard, programs). Fans scan, tap Join, and they're in.</p>
-      <div id="qrs" style="margin-top:16px"></div>
+      <p class="hint">One code for the whole gym. Fans scan it, tap their section on the gym map, and join. Put it on signs, the scoreboard and programs.</p>
+      <div id="qrMain" style="margin-top:16px"></div>
+      <details style="margin-top:18px"><summary style="cursor:pointer;color:var(--muted)">Optional: section-specific codes (skip the map)</summary>
+        <div id="qrs" style="margin-top:14px"></div></details>
     </section>
   </main>
 </div>
@@ -792,6 +798,18 @@
     const key = base + '|' + state.sections;
     if (box.dataset.key === key) return; box.dataset.key = key;
     box.innerHTML = '';
+    const mk = (url) => {
+      const code = document.createElement('div'); code.className = 'code';
+      if (window.qrcode) { const q = qrcode(0, 'M'); q.addData(url); q.make(); code.innerHTML = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); }
+      else { code.textContent = 'QR library could not load — check internet connection'; code.style.cssText += 'font-size:12px;color:#a00;padding:10px'; }
+      return code;
+    };
+    const main = document.createElement('div'); main.className = 'qr main';
+    const mb = document.createElement('b'); mb.textContent = 'Scan to light up the gym';
+    const ms = document.createElement('div'); ms.className = 'sub'; ms.textContent = 'Pick your section, tap Join';
+    const mu = document.createElement('small'); mu.textContent = base;
+    main.append(mk(base), mb, ms, mu);
+    $('qrMain').innerHTML = ''; $('qrMain').appendChild(main);
     for (let s = 1; s <= state.sections; s++) {
       const url = base + (base.includes('?') ? '&' : '?') + 's=' + s;
       const card = document.createElement('div'); card.className = 'qr';
