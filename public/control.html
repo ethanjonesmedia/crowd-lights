@@ -230,7 +230,7 @@
       <div id="secBars"></div>
       <div class="row">
         <label for="sections">Sections</label>
-        <input id="sections" type="number" min="1" max="50" value="4">
+        <input id="sections" type="number" min="1" max="50" value="3">
       </div>
       <p class="hint">Number your sections in order along the stands (left to right) so the Wave rolls across the crowd.</p>
     </section>
@@ -386,7 +386,7 @@
   try { PIN = sessionStorage.getItem('lsPin') || ''; } catch (e) {}
 
   let show = null, offset = 0;
-  const state = { effect: 'off', colors: ['#f7c21b', '#ffffff'], speed: 1, sections: 4, bpm: null, beatAt: null };
+  const state = { effect: 'off', colors: ['#f7c21b', '#ffffff'], speed: 1, sections: 3, bpm: null, beatAt: null };
   const PRESETS = [
     { name: 'Chargers', colors: ['#f7c21b', '#ffffff'] },
     { name: 'White', colors: ['#ffffff'] },

@@ -18,7 +18,7 @@ let show = {
   effect: 'off',
   colors: ['#f7c21b', '#ffffff'],
   speed: 1,
-  sections: 4,
+  sections: 3,
   bpm: null,       // beat sync: beats per minute, or null when off
   beatAt: null,    // server time (ms) of a beat, to line effects up with the music
   startAt: Date.now(),
